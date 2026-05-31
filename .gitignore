@@ -10,3 +10,5 @@ logs/*.csv
 frontend/.vite/
 .safe-disk-dev*.pid
 tmp-transfer-test/
+
+.vercel
