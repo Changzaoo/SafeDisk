@@ -71,11 +71,19 @@ a {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border-radius: 8px;
-  background: #1f9d55;
-  color: #ffffff;
+  background: #f8fbff;
+  border: 1px solid #33465f;
+  overflow: hidden;
+}
+
+.brand-logo {
+  display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .brand strong,

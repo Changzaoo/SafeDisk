@@ -1,4 +1,4 @@
-import { Activity, ArrowRightLeft, History, LayoutDashboard, Settings, ShieldCheck } from "lucide-react";
+import { Activity, ArrowRightLeft, History, LayoutDashboard, Settings } from "lucide-react";
 
 export type PageId = "dashboard" | "health" | "transfer" | "history" | "settings";
 
@@ -15,7 +15,7 @@ export function Sidebar({ activePage, onChange }: { activePage: PageId; onChange
     <aside className="sidebar">
       <div className="brand">
         <span className="brand-mark">
-          <ShieldCheck size={24} />
+          <img alt="SafeDisk Transfer" className="brand-logo" src="/brand/safedisk-logo-192.png" />
         </span>
         <span>
           <strong>SafeDisk</strong>
