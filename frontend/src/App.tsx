@@ -5,7 +5,7 @@ import { DiskHealth } from "./pages/DiskHealth";
 import { History } from "./pages/History";
 import { Transfer } from "./pages/Transfer";
 
-export interface AppSettings {
+export interface TransferDefaults {
   simulationDefault: boolean;
   minFreeMarginPercent: number;
   minFreeMarginGb: number;
@@ -19,7 +19,7 @@ interface Toast {
   tone: "success" | "error" | "info";
 }
 
-const fixedSettings: AppSettings = {
+const transferDefaults: TransferDefaults = {
   simulationDefault: true,
   minFreeMarginPercent: 5,
   minFreeMarginGb: 1,
@@ -44,7 +44,7 @@ export default function App() {
       case "health":
         return <DiskHealth notify={notify} />;
       case "transfer":
-        return <Transfer settings={fixedSettings} notify={notify} />;
+        return <Transfer defaults={transferDefaults} notify={notify} />;
       case "history":
         return <History notify={notify} />;
       default:

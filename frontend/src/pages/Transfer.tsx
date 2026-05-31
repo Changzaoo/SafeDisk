@@ -7,7 +7,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import type { LinkType, RelocationJobSnapshot, RelocationPreview, RelocationRequest } from "../types/relocation";
 import type { ConflictMode, TransferJobSnapshot, TransferPreview, TransferRequest } from "../types/transfer";
 import { formatBytes, percent } from "../utils/format";
-import type { AppSettings } from "../App";
+import type { TransferDefaults } from "../App";
 
 function parseSources(value: string): string[] {
   return value
@@ -25,17 +25,17 @@ interface PendingConfirmation {
 }
 
 export function Transfer({
-  settings,
+  defaults,
   notify
 }: {
-  settings: AppSettings;
+  defaults: TransferDefaults;
   notify: (message: string, tone?: "success" | "error" | "info") => void;
 }) {
   const [mode, setMode] = useState<TransferMode>("files");
   const [sourcesText, setSourcesText] = useState("");
   const [destination, setDestination] = useState("");
   const [conflictMode, setConflictMode] = useState<ConflictMode>("rename");
-  const [simulation, setSimulation] = useState(settings.simulationDefault);
+  const [simulation, setSimulation] = useState(defaults.simulationDefault);
   const [preview, setPreview] = useState<TransferPreview>();
   const [job, setJob] = useState<TransferJobSnapshot>();
   const [relocationSource, setRelocationSource] = useState("");
@@ -54,8 +54,8 @@ export function Transfer({
     destination,
     conflictMode,
     simulation,
-    safetyMarginPercent: settings.minFreeMarginPercent,
-    safetyMarginBytes: settings.minFreeMarginGb * 1024 * 1024 * 1024
+    safetyMarginPercent: defaults.minFreeMarginPercent,
+    safetyMarginBytes: defaults.minFreeMarginGb * 1024 * 1024 * 1024
   };
   const relocationBody: RelocationRequest = {
     source: relocationSource,
@@ -64,8 +64,8 @@ export function Transfer({
     linkType: relocationLinkType,
     simulation,
     keepBackup: relocationKeepBackup,
-    safetyMarginPercent: settings.minFreeMarginPercent,
-    safetyMarginBytes: settings.minFreeMarginGb * 1024 * 1024 * 1024
+    safetyMarginPercent: defaults.minFreeMarginPercent,
+    safetyMarginBytes: defaults.minFreeMarginGb * 1024 * 1024 * 1024
   };
 
   useEffect(() => {

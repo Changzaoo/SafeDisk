@@ -5,7 +5,6 @@ import type { HistoryRecord, TransferJobSnapshot, TransferPreview, TransferReque
 const LOCAL_API_DEFAULT_URL = "http://localhost:3335";
 const API_BASE_URL_STORAGE_KEY = "safe-disk-api-url";
 const API_BASE_URL_USER_SET_KEY = "safe-disk-api-url-user-set";
-const SETTINGS_STORAGE_KEY = "safe-disk-settings";
 
 function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, "");
@@ -31,7 +30,6 @@ export function getApiBaseUrl(): string {
 
   window.localStorage.removeItem(API_BASE_URL_STORAGE_KEY);
   window.localStorage.removeItem(API_BASE_URL_USER_SET_KEY);
-  window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
   return detectedApiBaseUrl ?? DEFAULT_API_BASE_URL;
 }
 
