@@ -69,7 +69,7 @@ Variaveis usadas:
 
 ### Frontend no Vercel
 
-O projeto tem `vercel.json` na raiz e tambem em `frontend/`.
+O projeto tem `frontend/vercel.json`. Configure o projeto do Vercel apontando para a pasta `frontend`.
 
 Configuracao recomendada:
 
@@ -83,12 +83,6 @@ URL desejada:
 
 - Frontend: `https://safedisk.vercel.app`
 - Backend: `https://safedisk.onrender.com`
-
-Se publicar pela raiz do monorepo, o `vercel.json` da raiz usa:
-
-- Install command: `npm install --prefix frontend`
-- Build command: `npm --prefix frontend run build`
-- Output directory: `frontend/dist`
 
 ## smartmontools
 
