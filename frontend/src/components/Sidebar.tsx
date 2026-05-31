@@ -1,11 +1,12 @@
-import { Activity, ArrowRightLeft, History, LayoutDashboard } from "lucide-react";
+import { Activity, ArrowRightLeft, FileSearch, History, LayoutDashboard } from "lucide-react";
 
-export type PageId = "dashboard" | "health" | "transfer" | "history";
+export type PageId = "dashboard" | "health" | "transfer" | "recovery" | "history";
 
 const items: Array<{ id: PageId; label: string; icon: typeof LayoutDashboard }> = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "health", label: "Saude", icon: Activity },
   { id: "transfer", label: "Transferencia", icon: ArrowRightLeft },
+  { id: "recovery", label: "Recuperacao", icon: FileSearch },
   { id: "history", label: "Historico", icon: History }
 ];
 

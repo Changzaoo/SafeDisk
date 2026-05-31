@@ -1,12 +1,19 @@
-import { RefreshCw } from "lucide-react";
+import { FileSearch, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import { DiskCard } from "../components/DiskCard";
 import { StatusBadge } from "../components/StatusBadge";
+import type { PageId } from "../components/Sidebar";
 import type { DiskInfo, DiskHealthStatus } from "../types/disk";
 import { formatBytes } from "../utils/format";
 
-export function Dashboard({ notify }: { notify: (message: string, tone?: "success" | "error" | "info") => void }) {
+export function Dashboard({
+  notify,
+  onNavigate
+}: {
+  notify: (message: string, tone?: "success" | "error" | "info") => void;
+  onNavigate?: (page: PageId) => void;
+}) {
   const [disks, setDisks] = useState<DiskInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -67,6 +74,14 @@ export function Dashboard({ notify }: { notify: (message: string, tone?: "succes
             <StatusBadge status="unknown" label={`${counts.unknown} desconhecido`} />
           </div>
         </div>
+      </div>
+
+      <div className="dashboard-actions">
+        <button className="action-card dashboard-action-card" type="button" onClick={() => onNavigate?.("recovery")}>
+          <FileSearch size={22} />
+          <strong>Recuperar arquivos</strong>
+          <small>Tente encontrar arquivos apagados ou perdidos sem salvar no mesmo disco.</small>
+        </button>
       </div>
 
       <div className="disk-grid">

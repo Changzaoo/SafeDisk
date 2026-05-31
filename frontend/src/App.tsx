@@ -3,6 +3,7 @@ import { Sidebar, type PageId } from "./components/Sidebar";
 import { Dashboard } from "./pages/Dashboard";
 import { DiskHealth } from "./pages/DiskHealth";
 import { History } from "./pages/History";
+import { Recovery } from "./pages/Recovery";
 import { Transfer } from "./pages/Transfer";
 
 export interface TransferDefaults {
@@ -45,10 +46,12 @@ export default function App() {
         return <DiskHealth notify={notify} />;
       case "transfer":
         return <Transfer defaults={transferDefaults} notify={notify} />;
+      case "recovery":
+        return <Recovery notify={notify} />;
       case "history":
         return <History notify={notify} />;
       default:
-        return <Dashboard notify={notify} />;
+        return <Dashboard notify={notify} onNavigate={setActivePage} />;
     }
   }, [activePage, notify]);
 

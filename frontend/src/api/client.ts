@@ -1,4 +1,13 @@
 import type { DiskInfo, SmartctlDetection } from "../types/disk";
+import type {
+  RecoveryHealthCheck,
+  RecoveryHistoryRecord,
+  RecoveryJobSnapshot,
+  RecoveryLocation,
+  RecoveryPathValidation,
+  RecoveryStartRequest,
+  RecoveryToolsDetection
+} from "../types/recovery";
 import type { RelocationJobSnapshot, RelocationPreview, RelocationRequest } from "../types/relocation";
 import type { HistoryRecord, TransferJobSnapshot, TransferPreview, TransferRequest } from "../types/transfer";
 
@@ -23,6 +32,15 @@ const LOCAL_API_CANDIDATES = [
 ];
 let detectedApiBaseUrl: string | undefined;
 
+class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message);
+  }
+}
+
 export function getApiBaseUrl(): string {
   if (typeof window === "undefined") {
     return DEFAULT_API_BASE_URL;
@@ -41,8 +59,12 @@ function isLocalDefaultMode(baseUrl: string): boolean {
   return LOCAL_API_CANDIDATES.includes(baseUrl);
 }
 
-function shouldTryLocalFallback(error: unknown): boolean {
+function shouldTryLocalFallback(error: unknown, path: string): boolean {
   if (error instanceof TypeError) {
+    return true;
+  }
+
+  if (error instanceof ApiRequestError && error.status === 404 && path.startsWith("/api/recovery")) {
     return true;
   }
 
@@ -66,7 +88,7 @@ async function requestFromBase<T>(baseUrl: string, path: string, init?: RequestI
     } catch {
       message = await response.text();
     }
-    throw new Error(message);
+    throw new ApiRequestError(message, response.status);
   }
 
   return (await response.json()) as T;
@@ -78,7 +100,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     return await requestFromBase<T>(baseUrl, path, init);
   } catch (error) {
-    if (!isLocalDefaultMode(baseUrl) || !shouldTryLocalFallback(error)) {
+    if (!isLocalDefaultMode(baseUrl) || !shouldTryLocalFallback(error, path)) {
       throw error;
     }
 
@@ -141,6 +163,31 @@ export const api = {
   getRelocationStatus: (jobId: string) => request<RelocationJobSnapshot>(`/api/relocation/status/${encodeURIComponent(jobId)}`),
   cancelRelocation: (jobId: string) =>
     request<RelocationJobSnapshot>(`/api/relocation/cancel/${encodeURIComponent(jobId)}`, { method: "POST" }),
+  getRecoveryLocations: () => request<RecoveryLocation[]>("/api/recovery/locations"),
+  validateRecoveryPaths: (originPath: string, destinationPath: string) =>
+    request<RecoveryPathValidation>("/api/recovery/validate-paths", {
+      method: "POST",
+      body: JSON.stringify({ originPath, destinationPath })
+    }),
+  checkRecoveryHealth: (originPath: string) =>
+    request<RecoveryHealthCheck>(`/api/recovery/health-check?originPath=${encodeURIComponent(originPath)}`),
+  detectRecoveryTools: () => request<RecoveryToolsDetection>("/api/recovery/tools"),
+  startRecovery: (body: RecoveryStartRequest) =>
+    request<RecoveryJobSnapshot>("/api/recovery/start", {
+      method: "POST",
+      body: JSON.stringify(body)
+    }),
+  getRecoveryStatus: (jobId: string) => request<RecoveryJobSnapshot>(`/api/recovery/status/${encodeURIComponent(jobId)}`),
+  cancelRecovery: (jobId: string) =>
+    request<RecoveryJobSnapshot>(`/api/recovery/cancel/${encodeURIComponent(jobId)}`, { method: "POST" }),
+  getRecoveryHistory: () => request<RecoveryHistoryRecord[]>("/api/recovery/history"),
+  recoveryReportUrl: (jobId: string, format: "txt" | "json") =>
+    `${getApiBaseUrl()}/api/recovery/report/${encodeURIComponent(jobId)}?format=${format}`,
+  openRecoveredFolder: (path: string) =>
+    request<{ ok: true }>("/api/recovery/open-folder", {
+      method: "POST",
+      body: JSON.stringify({ path })
+    }),
   getHistory: () => request<HistoryRecord[]>("/api/history"),
   historyExportUrl: (format: "json" | "csv") => `${getApiBaseUrl()}/api/history/export?format=${format}`
 };

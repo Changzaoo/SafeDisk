@@ -17,6 +17,23 @@ CREATE TABLE IF NOT EXISTS transfer_history (
 
 CREATE INDEX IF NOT EXISTS idx_transfer_history_timestamp
 ON transfer_history(timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS recovery_history (
+  id TEXT PRIMARY KEY,
+  timestamp TEXT NOT NULL,
+  problem TEXT NOT NULL,
+  origin_path TEXT NOT NULL,
+  destination_path TEXT NOT NULL,
+  mode TEXT NOT NULL,
+  found_count INTEGER NOT NULL,
+  saved_count INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('concluido', 'cancelado', 'erro')),
+  notes TEXT,
+  advanced_logs TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_recovery_history_timestamp
+ON recovery_history(timestamp DESC);
 `;
 
 let database: DatabaseSync | undefined;

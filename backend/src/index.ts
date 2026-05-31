@@ -4,6 +4,7 @@ import { initializeDatabase } from "./db/database.js";
 import { disksRouter } from "./routes/disks.routes.js";
 import { historyRouter } from "./routes/history.routes.js";
 import { relocationRouter } from "./routes/relocation.routes.js";
+import { recoveryRouter } from "./routes/recovery.routes.js";
 import { transferRouter } from "./routes/transfer.routes.js";
 import { ensureLogDirectory, logEvent } from "./utils/logger.js";
 
@@ -193,6 +194,7 @@ app.get("/api/health", (_request, response) => {
 app.use("/api/disks", disksRouter);
 app.use("/api/transfer", transferRouter);
 app.use("/api/relocation", relocationRouter);
+app.use("/api/recovery", recoveryRouter);
 app.use("/api/history", historyRouter);
 
 const errorHandler: ErrorRequestHandler = async (error, _request, response, _next) => {

@@ -115,6 +115,82 @@ URL desejada:
 6. Mantenha `Modo simulacao` ligado para validar o plano sem mover arquivos.
 7. Ao iniciar uma transferencia real, confirme a operacao. O arquivo original so e apagado depois que o hash SHA-256 da copia bate com o da origem.
 
+## Recuperacao de Arquivos
+
+A area `Recuperacao` fica no menu lateral e tambem aparece como card no dashboard. Ela adiciona um assistente para tentar encontrar arquivos apagados, perdidos, ocultos, esquecidos em pastas comuns ou extraidos de uma copia de disco.
+
+Fluxo recomendado:
+
+1. Abra `Recuperacao`.
+2. Clique em `Comecar recuperacao`.
+3. Escolha o que aconteceu.
+4. Informe onde os arquivos estavam.
+5. Informe uma pasta de destino em outro disco ou outra unidade.
+6. Escolha `Busca rapida`, `Busca profunda`, `Verificar saude primeiro` ou `Criar copia segura`.
+7. Revise e clique em `Iniciar com seguranca`.
+
+Regras de seguranca aplicadas:
+
+- O destino nao pode ser o mesmo disco/unidade da origem.
+- O destino nao pode ficar dentro da pasta analisada.
+- Arquivos encontrados nao sobrescrevem arquivos existentes; o nome e ajustado automaticamente.
+- O modulo nao formata, nao corrige disco automaticamente, nao roda CHKDSK e nao apaga arquivos de origem.
+- Nenhum arquivo e enviado para internet.
+- O historico salva somente metadados da busca, nunca o conteudo dos arquivos.
+
+### Busca rapida
+
+A busca rapida funciona em pastas acessiveis pelo backend local. Ela procura arquivos por tipos escolhidos, arquivos recentes, arquivos temporarios, itens ocultos por nome e, quando possivel, a lixeira local da unidade. Tambem pode incluir Downloads, Documentos, Area de Trabalho, Imagens e Videos.
+
+Ela ajuda a encontrar arquivos perdidos, movidos, ocultos ou esquecidos. Nao promete recuperar dados ja removidos fisicamente do dispositivo.
+
+### Busca profunda
+
+A busca profunda funciona sobre um arquivo de imagem ou arquivo binario grande escolhido pelo usuario, como `.img`, `.dd`, `.iso`, `.bin` ou `.raw`. Ela le em blocos para nao carregar tudo na memoria e tenta salvar arquivos encontrados em pastas por tipo:
+
+- Imagens
+- Documentos
+- Videos
+- Audios
+- Arquivos compactados
+- Outros
+
+Tipos preparados: JPG/JPEG, PNG, GIF, PDF, ZIP, DOCX, XLSX, PPTX, MP4, MP3 e trechos TXT quando possivel. Alguns arquivos podem receber nomes novos como `recuperado_0001.jpg` porque o nome original pode nao estar mais disponivel.
+
+### Criar copia segura
+
+`Criar copia segura` copia arquivos acessiveis da origem para uma pasta nova no destino antes da recuperacao. Isso reduz a necessidade de mexer direto no original. Para imagem de disco real ou disco fisico inteiro, a estrutura fica preparada, mas depende de permissao/ferramenta externa adequada.
+
+### Historico e relatorios
+
+O modulo grava historico local em SQLite com data, problema escolhido, origem, destino, modo usado, quantidade encontrada, quantidade salva e status. Ao concluir, tambem gera relatorio `.txt` simples e `.json` avancado na pasta de destino quando possivel.
+
+### Ferramentas externas
+
+A tela `Ajuda` detecta integracoes preparadas:
+
+- Windows File Recovery (`winfr.exe`), se instalado.
+- PhotoRec/TestDisk, se os executaveis estiverem em uma pasta `tools/`.
+
+Pastas procuradas:
+
+- `safe-disk-transfer/tools`
+- `safe-disk-transfer/backend/tools`
+- pasta `tools` acima do diretorio atual do backend
+
+Ferramentas proprietarias como Recuva, DMDE, R-Studio, Disk Drill, EaseUS e Stellar sao listadas apenas como opcoes externas. O SafeDisk nao automatiza ferramentas fechadas.
+
+### Modo demonstracao
+
+O `Modo demonstracao` simula progresso, arquivos encontrados, resultado e historico sem ler ou salvar arquivos reais. Use para testar a interface.
+
+### Limitacoes reais
+
+- No navegador puro nao ha acesso direto a discos fisicos; o backend local precisa estar rodando.
+- Para analisar um disco inteiro de forma profunda, o aplicativo precisa de uma copia de disco ou uma integracao desktop/ferramenta externa.
+- Em alguns SSDs, arquivos apagados podem ser limpos automaticamente pelo proprio dispositivo, reduzindo a chance.
+- Se um HD faz barulho ou trava muito, desligue e procure ajuda especializada.
+
 ## Relocar projetos ou programas sem quebrar caminhos
 
 Na tela `Transferencia`, selecione `Relocar pasta`.
@@ -176,6 +252,17 @@ Navegadores nao fornecem acesso total a discos fisicos, SMART, locks de arquivos
 - `POST /api/relocation/start`
 - `GET /api/relocation/status/:jobId`
 - `POST /api/relocation/cancel/:jobId`
+- `GET /api/recovery/locations`
+- `POST /api/recovery/validate-paths`
+- `GET /api/recovery/health-check?originPath=...`
+- `GET /api/recovery/tools`
+- `POST /api/recovery/start`
+- `GET /api/recovery/status/:jobId`
+- `POST /api/recovery/cancel/:jobId`
+- `GET /api/recovery/history`
+- `GET /api/recovery/report/:jobId?format=txt`
+- `GET /api/recovery/report/:jobId?format=json`
+- `POST /api/recovery/open-folder`
 - `GET /api/history`
 - `GET /api/history/export?format=json`
 - `GET /api/history/export?format=csv`
