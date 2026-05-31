@@ -77,13 +77,13 @@ O arquivo `render.yaml` ja define o servico `safedisk`.
 1. No Render, crie um Blueprint a partir do repositorio.
 2. Use o `render.yaml` da raiz.
 3. O servico esta nomeado como `safedisk`, para usar `https://safedisk.onrender.com`.
-4. `FRONTEND_ORIGIN` ja esta definido como `https://safedisk.vercel.app`.
+4. `ALLOWED_ORIGINS` ja esta definido como `https://safedisk.vercel.app`.
 5. O health check fica em `/api/health`.
 
 Variaveis usadas:
 
 - `NODE_VERSION=24.15.0`
-- `FRONTEND_ORIGIN=https://safedisk.vercel.app`
+- `ALLOWED_ORIGINS=https://safedisk.vercel.app`
 - `SAFEDISK_DB_PATH=/tmp/safedisk.sqlite`
 - `SAFEDISK_LOG_DIR=/tmp/safedisk-logs`
 

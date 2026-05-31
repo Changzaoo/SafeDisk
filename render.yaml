@@ -10,7 +10,7 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 24.15.0
-      - key: FRONTEND_ORIGIN
+      - key: ALLOWED_ORIGINS
         value: https://safedisk.vercel.app
       - key: SAFEDISK_DB_PATH
         value: /tmp/safedisk.sqlite
