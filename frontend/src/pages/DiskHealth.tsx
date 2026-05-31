@@ -1,4 +1,4 @@
-import { RefreshCw, ShieldAlert } from "lucide-react";
+import { Cloud, RefreshCw, ShieldAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api/client";
 import { DiskCard } from "../components/DiskCard";
@@ -44,6 +44,15 @@ export function DiskHealth({ notify }: { notify: (message: string, tone?: "succe
           Atualizar
         </button>
       </header>
+
+      {api.isUsingCloudBackend() ? (
+        <div className="notice notice-warning">
+          <Cloud size={18} />
+          <span>
+            O backend hospedado no Render nao acessa SMART, PowerShell, WMIC nem arquivos do seu Windows. Para ver saude real dos discos, use o backend local.
+          </span>
+        </div>
+      ) : null}
 
       <div className={`notice ${smartctl?.installed ? "notice-success" : "notice-warning"}`}>
         <ShieldAlert size={18} />

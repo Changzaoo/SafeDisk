@@ -1,4 +1,4 @@
-import { CheckCircle2, RefreshCw, Trash2 } from "lucide-react";
+import { CheckCircle2, Cloud, Monitor, RefreshCw, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { api } from "../api/client";
 import { StatusBadge } from "../components/StatusBadge";
@@ -17,6 +17,7 @@ export function Settings({
   const [smartctl, setSmartctl] = useState<SmartctlDetection>();
   const [cleanupRoot, setCleanupRoot] = useState("");
   const [olderThanHours, setOlderThanHours] = useState(24);
+  const [apiUrl, setApiUrl] = useState(api.baseUrl);
   const [busy, setBusy] = useState(false);
 
   function patchSettings(partial: Partial<AppSettings>) {
@@ -47,6 +48,24 @@ export function Settings({
     }
   }
 
+  function saveApiUrl() {
+    const next = api.setBaseUrl(apiUrl);
+    setApiUrl(next);
+    notify("Endereco da API atualizado. Atualize as telas para carregar os dados desse backend.", "success");
+  }
+
+  function useLocalBackend() {
+    const next = api.setBaseUrl("http://localhost:3333");
+    setApiUrl(next);
+    notify("API local selecionada. Mantenha o backend rodando no Windows.", "success");
+  }
+
+  function useCloudBackend() {
+    const next = api.setBaseUrl("https://safedisk.onrender.com");
+    setApiUrl(next);
+    notify("API da nuvem selecionada. Discos locais nao ficarao disponiveis.", "info");
+  }
+
   return (
     <section className="page">
       <header className="page-header">
@@ -57,6 +76,32 @@ export function Settings({
       </header>
 
       <div className="settings-grid">
+        <div className="form-panel">
+          <h2>Conexao da API</h2>
+          <label>
+            Backend ativo
+            <input value={apiUrl} onChange={(event) => setApiUrl(event.target.value)} />
+          </label>
+          <div className="button-row">
+            <button className="icon-button label-button" type="button" onClick={useLocalBackend}>
+              <Monitor size={18} />
+              Local
+            </button>
+            <button className="icon-button label-button" type="button" onClick={useCloudBackend}>
+              <Cloud size={18} />
+              Nuvem
+            </button>
+            <button className="icon-button label-button primary" type="button" onClick={saveApiUrl}>
+              <Save size={18} />
+              Salvar
+            </button>
+          </div>
+          <div className="notice notice-warning inline-notice">
+            <Cloud size={18} />
+            <span>Para ver discos e mover pastas deste PC, use o backend local em http://localhost:3333. O Render mostra apenas o ambiente da nuvem.</span>
+          </div>
+        </div>
+
         <div className="form-panel">
           <h2>Transferencia</h2>
           <label className="toggle-line">

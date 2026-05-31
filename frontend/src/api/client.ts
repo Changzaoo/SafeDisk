@@ -2,11 +2,42 @@ import type { DiskInfo, SmartctlDetection } from "../types/disk";
 import type { RelocationJobSnapshot, RelocationPreview, RelocationRequest } from "../types/relocation";
 import type { HistoryRecord, TransferJobSnapshot, TransferPreview, TransferRequest } from "../types/transfer";
 
-const API_BASE_URL =
+const DEFAULT_API_BASE_URL =
   import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:3333" : "https://safedisk.onrender.com");
+const API_BASE_URL_STORAGE_KEY = "safe-disk-api-url";
+
+function normalizeBaseUrl(value: string): string {
+  return value.trim().replace(/\/+$/, "");
+}
+
+export function getApiBaseUrl(): string {
+  if (typeof window === "undefined") {
+    return DEFAULT_API_BASE_URL;
+  }
+
+  const stored = window.localStorage.getItem(API_BASE_URL_STORAGE_KEY);
+  return stored ? normalizeBaseUrl(stored) : DEFAULT_API_BASE_URL;
+}
+
+export function setApiBaseUrl(value: string): string {
+  const normalized = normalizeBaseUrl(value);
+  window.localStorage.setItem(API_BASE_URL_STORAGE_KEY, normalized);
+  window.dispatchEvent(new Event("safe-disk-api-url-changed"));
+  return normalized;
+}
+
+export function resetApiBaseUrl(): string {
+  window.localStorage.removeItem(API_BASE_URL_STORAGE_KEY);
+  window.dispatchEvent(new Event("safe-disk-api-url-changed"));
+  return DEFAULT_API_BASE_URL;
+}
+
+export function isUsingCloudBackend(): boolean {
+  return getApiBaseUrl().includes("onrender.com");
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {})
@@ -29,7 +60,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  baseUrl: API_BASE_URL,
+  get baseUrl() {
+    return getApiBaseUrl();
+  },
+  defaultBaseUrl: DEFAULT_API_BASE_URL,
+  setBaseUrl: setApiBaseUrl,
+  resetBaseUrl: resetApiBaseUrl,
+  isUsingCloudBackend,
   getDisks: () => request<DiskInfo[]>("/api/disks"),
   getDisk: (id: string) => request<DiskInfo>(`/api/disks/${encodeURIComponent(id)}`),
   getSmartctl: () => request<SmartctlDetection>("/api/disks/smartctl"),
@@ -69,5 +106,5 @@ export const api = {
   cancelRelocation: (jobId: string) =>
     request<RelocationJobSnapshot>(`/api/relocation/cancel/${encodeURIComponent(jobId)}`, { method: "POST" }),
   getHistory: () => request<HistoryRecord[]>("/api/history"),
-  historyExportUrl: (format: "json" | "csv") => `${API_BASE_URL}/api/history/export?format=${format}`
+  historyExportUrl: (format: "json" | "csv") => `${getApiBaseUrl()}/api/history/export?format=${format}`
 };

@@ -30,6 +30,31 @@ URLs padrao:
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3333
 
+## Usar o frontend online com discos locais
+
+O site publicado em `https://safedisk.vercel.app` precisa de um backend rodando no seu Windows para enxergar HDs/SSDs e mover pastas locais. O backend hospedado no Render nao consegue acessar sua maquina.
+
+No computador Windows, rode:
+
+```powershell
+cd safe-disk-transfer
+npm install
+npm run dev:backend
+```
+
+Depois, no site:
+
+1. Abra `Configuracoes`.
+2. Em `Conexao da API`, clique em `Local`.
+3. Confirme que o backend ativo ficou `http://localhost:3333`.
+4. Volte para `Dashboard` ou `Saude`.
+
+Se quiser SMART avancado no Windows, instale o smartmontools localmente:
+
+```powershell
+winget install smartmontools.smartmontools
+```
+
 Se alguma porta ja estiver ocupada, rode em duas janelas com portas alternativas:
 
 ```powershell
