@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+backend/data/
+logs/*.log
+logs/*.json
+logs/*.csv
+frontend/.vite/
+.safe-disk-dev*.pid
+tmp-transfer-test/

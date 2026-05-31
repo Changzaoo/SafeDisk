@@ -1,0 +1,44 @@
+import fs from "node:fs";
+import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
+
+const SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS transfer_history (
+  id TEXT PRIMARY KEY,
+  timestamp TEXT NOT NULL,
+  source_path TEXT NOT NULL,
+  destination_path TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  hash_source TEXT,
+  hash_destination TEXT,
+  status TEXT NOT NULL CHECK (status IN ('success', 'error', 'canceled')),
+  error_message TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_transfer_history_timestamp
+ON transfer_history(timestamp DESC);
+`;
+
+let database: DatabaseSync | undefined;
+
+export function getDatabasePath(): string {
+  return process.env.SAFEDISK_DB_PATH ?? path.resolve(process.cwd(), "data", "safedisk.sqlite");
+}
+
+export function initializeDatabase(): DatabaseSync {
+  if (database) {
+    return database;
+  }
+
+  const dbPath = getDatabasePath();
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+  database = new DatabaseSync(dbPath);
+  database.exec("PRAGMA journal_mode = WAL;");
+  database.exec("PRAGMA foreign_keys = ON;");
+  database.exec(SCHEMA_SQL);
+  return database;
+}
+
+export function getDatabase(): DatabaseSync {
+  return initializeDatabase();
+}
