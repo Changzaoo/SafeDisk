@@ -223,11 +223,18 @@ Rotas testadas em producao:
 /api/admin => 401
 /debug => 404
 /server-status => 404
-//server-status => 404
+//server-status => 308 para /server-status, final 404 seguindo redirect
 /api/debug => 404
 /api/env => 404
 /api/config => 404
 /api/health => 404 no frontend Vercel
+```
+
+Redirecionamento HTTP validado em producao:
+
+```txt
+http://safedisk.vercel.app/ => 308 Permanent Redirect
+Location: https://safedisk.vercel.app/
 ```
 
 Teste CORS em producao:
