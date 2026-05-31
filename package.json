@@ -3,16 +3,22 @@
   "version": "1.0.0",
   "private": true,
   "description": "Aplicacao local para verificar saude de discos e mover arquivos com validacao por hash.",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "engines": {
-    "node": ">=24.0.0"
+    "node": "24.15.0"
   },
   "scripts": {
-    "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend",
+    "install:all": "npm install",
     "dev": "concurrently -n backend,frontend -c green,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "npm --prefix frontend run dev -- --host 0.0.0.0",
     "dev:backend": "npm --prefix backend run dev",
     "build": "npm --prefix backend run build && npm --prefix frontend run build",
-    "start": "concurrently -n backend,frontend -c green,cyan \"npm --prefix backend run start\" \"npm --prefix frontend run preview -- --host 0.0.0.0\""
+    "build:backend": "npm --prefix backend run build",
+    "start": "npm --prefix backend run start",
+    "start:all": "concurrently -n backend,frontend -c green,cyan \"npm --prefix backend run start\" \"npm --prefix frontend run preview -- --host 0.0.0.0\""
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
