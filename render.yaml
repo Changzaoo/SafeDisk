@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: safedisk-backend
+    name: safedisk
     runtime: node
     plan: free
     rootDir: backend
@@ -11,7 +11,7 @@ services:
       - key: NODE_VERSION
         value: 24.15.0
       - key: FRONTEND_ORIGIN
-        sync: false
+        value: https://safedisk.vercel.app
       - key: SAFEDISK_DB_PATH
         value: /tmp/safedisk.sqlite
       - key: SAFEDISK_LOG_DIR

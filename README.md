@@ -52,17 +52,18 @@ Este projeto foi pensado para rodar localmente no Windows. O deploy em nuvem ser
 
 ### Backend no Render
 
-O arquivo `render.yaml` ja define o servico `safedisk-backend`.
+O arquivo `render.yaml` ja define o servico `safedisk`.
 
 1. No Render, crie um Blueprint a partir do repositorio.
 2. Use o `render.yaml` da raiz.
-3. Defina `FRONTEND_ORIGIN` com a URL final do Vercel quando ela existir.
-4. O health check fica em `/api/health`.
+3. O servico esta nomeado como `safedisk`, para usar `https://safedisk.onrender.com`.
+4. `FRONTEND_ORIGIN` ja esta definido como `https://safedisk.vercel.app`.
+5. O health check fica em `/api/health`.
 
 Variaveis usadas:
 
 - `NODE_VERSION=24.15.0`
-- `FRONTEND_ORIGIN=https://seu-frontend.vercel.app`
+- `FRONTEND_ORIGIN=https://safedisk.vercel.app`
 - `SAFEDISK_DB_PATH=/tmp/safedisk.sqlite`
 - `SAFEDISK_LOG_DIR=/tmp/safedisk-logs`
 
@@ -76,7 +77,12 @@ Configuracao recomendada:
 - Build command: `npm run build`
 - Output directory: `dist`
 - Root directory: `frontend`
-- Environment variable: `VITE_API_URL=https://sua-api.onrender.com`
+- Environment variable: `VITE_API_URL=https://safedisk.onrender.com`
+
+URL desejada:
+
+- Frontend: `https://safedisk.vercel.app`
+- Backend: `https://safedisk.onrender.com`
 
 Se publicar pela raiz do monorepo, o `vercel.json` da raiz usa:
 

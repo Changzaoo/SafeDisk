@@ -2,7 +2,8 @@ import type { DiskInfo, SmartctlDetection } from "../types/disk";
 import type { RelocationJobSnapshot, RelocationPreview, RelocationRequest } from "../types/relocation";
 import type { HistoryRecord, TransferJobSnapshot, TransferPreview, TransferRequest } from "../types/transfer";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3333";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:3333" : "https://safedisk.onrender.com");
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
