@@ -186,6 +186,57 @@ curl -i https://safedisk.vercel.app/api/config
 
 Resultado esperado: `404`, `403` ou resposta minima sem dados sensiveis.
 
+## Validacao Executada Em Producao
+
+Deploy Vercel validado em:
+
+```txt
+https://safedisk.vercel.app/
+```
+
+Resultado observado em `curl -I` equivalente:
+
+- `content-security-policy`: presente
+- `x-frame-options`: `DENY`
+- `x-content-type-options`: `nosniff`
+- `referrer-policy`: `strict-origin-when-cross-origin`
+- `permissions-policy`: presente
+- `strict-transport-security`: `max-age=63072000; includeSubDomains; preload`
+- `access-control-allow-origin`: `https://safedisk.vercel.app`, sem wildcard
+
+Rotas testadas em producao:
+
+```txt
+/.env => 404
+/.env.local => 404
+/secrets.json => 404
+/config.json => 404
+/.git/config => 404
+/swagger => 404
+/api-docs => 404
+/openapi.json => 404
+/swagger.json => 404
+/graphql => 404
+/admin => 401
+/api/admin => 401
+/debug => 404
+/api/debug => 404
+/api/env => 404
+/api/config => 404
+/api/health => 404 no frontend Vercel
+```
+
+Teste CORS em producao:
+
+```txt
+Origin: https://evil.example
+GET https://safedisk.vercel.app/api/health
+Resultado: 404
+Access-Control-Allow-Origin: https://safedisk.vercel.app
+```
+
+Conclusao: a origem maliciosa nao recebe wildcard nem eco da propria origem.
+
 ## Pendencias Manuais
 
 - Confirmar no Render que `NODE_ENV=production` e `ALLOWED_ORIGINS=https://safedisk.vercel.app` estao configurados.
