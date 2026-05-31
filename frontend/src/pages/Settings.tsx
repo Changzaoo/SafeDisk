@@ -61,7 +61,7 @@ export function Settings({
   }
 
   function useCloudBackend() {
-    const next = api.setBaseUrl("https://safedisk.onrender.com");
+    const next = api.setBaseUrl(api.cloudBaseUrl);
     setApiUrl(next);
     notify("API da nuvem selecionada. Discos locais nao ficarao disponiveis.", "info");
   }
@@ -98,7 +98,7 @@ export function Settings({
           </div>
           <div className="notice notice-warning inline-notice">
             <Cloud size={18} />
-            <span>Para ver discos e mover pastas deste PC, use o backend local em http://localhost:3333. O Render mostra apenas o ambiente da nuvem.</span>
+            <span>O padrao do SafeDisk e o backend local em http://localhost:3333, porque so ele consegue ver discos e mover pastas deste PC.</span>
           </div>
         </div>
 

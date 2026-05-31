@@ -45,8 +45,8 @@ npm run dev:backend
 Depois, no site:
 
 1. Abra `Configuracoes`.
-2. Em `Conexao da API`, clique em `Local`.
-3. Confirme que o backend ativo ficou `http://localhost:3333`.
+2. O frontend ja usa `http://localhost:3333` como padrao.
+3. Confirme em `Configuracoes > Conexao da API` que o backend ativo ficou `http://localhost:3333`.
 4. Volte para `Dashboard` ou `Saude`.
 
 Se quiser SMART avancado no Windows, instale o smartmontools localmente:
@@ -62,7 +62,7 @@ $env:PORT="3335"; npm --prefix backend run dev
 ```
 
 ```powershell
-$env:VITE_API_URL="http://localhost:3335"; npm --prefix frontend run dev -- --host 0.0.0.0 --port 5174
+$env:VITE_DEFAULT_API_URL="http://localhost:3335"; npm --prefix frontend run dev -- --host 0.0.0.0 --port 5174
 ```
 
 ## Build
@@ -102,7 +102,9 @@ Configuracao recomendada:
 - Build command: `npm run build`
 - Output directory: `dist`
 - Root directory: `frontend`
-- Environment variable: `VITE_API_URL=https://safedisk.onrender.com`
+- Environment variable opcional para botao de nuvem: `VITE_CLOUD_API_URL=https://safedisk.onrender.com`
+
+O frontend publicado tambem usa `http://localhost:3333` por padrao, porque a funcao principal do SafeDisk e acessar os discos da maquina do usuario.
 
 URL desejada:
 

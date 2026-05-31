@@ -2,9 +2,10 @@ import type { DiskInfo, SmartctlDetection } from "../types/disk";
 import type { RelocationJobSnapshot, RelocationPreview, RelocationRequest } from "../types/relocation";
 import type { HistoryRecord, TransferJobSnapshot, TransferPreview, TransferRequest } from "../types/transfer";
 
-const DEFAULT_API_BASE_URL =
-  import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:3333" : "https://safedisk.onrender.com");
+const DEFAULT_API_BASE_URL = import.meta.env.VITE_DEFAULT_API_URL ?? "http://localhost:3333";
+const CLOUD_API_BASE_URL = import.meta.env.VITE_CLOUD_API_URL ?? "https://safedisk.onrender.com";
 const API_BASE_URL_STORAGE_KEY = "safe-disk-api-url";
+const API_BASE_URL_USER_SET_KEY = "safe-disk-api-url-user-set";
 
 function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, "");
@@ -16,18 +17,25 @@ export function getApiBaseUrl(): string {
   }
 
   const stored = window.localStorage.getItem(API_BASE_URL_STORAGE_KEY);
+  const wasUserSet = window.localStorage.getItem(API_BASE_URL_USER_SET_KEY) === "1";
+  if (stored === CLOUD_API_BASE_URL && !wasUserSet) {
+    return DEFAULT_API_BASE_URL;
+  }
+
   return stored ? normalizeBaseUrl(stored) : DEFAULT_API_BASE_URL;
 }
 
 export function setApiBaseUrl(value: string): string {
   const normalized = normalizeBaseUrl(value);
   window.localStorage.setItem(API_BASE_URL_STORAGE_KEY, normalized);
+  window.localStorage.setItem(API_BASE_URL_USER_SET_KEY, "1");
   window.dispatchEvent(new Event("safe-disk-api-url-changed"));
   return normalized;
 }
 
 export function resetApiBaseUrl(): string {
   window.localStorage.removeItem(API_BASE_URL_STORAGE_KEY);
+  window.localStorage.removeItem(API_BASE_URL_USER_SET_KEY);
   window.dispatchEvent(new Event("safe-disk-api-url-changed"));
   return DEFAULT_API_BASE_URL;
 }
@@ -64,6 +72,7 @@ export const api = {
     return getApiBaseUrl();
   },
   defaultBaseUrl: DEFAULT_API_BASE_URL,
+  cloudBaseUrl: CLOUD_API_BASE_URL,
   setBaseUrl: setApiBaseUrl,
   resetBaseUrl: resetApiBaseUrl,
   isUsingCloudBackend,

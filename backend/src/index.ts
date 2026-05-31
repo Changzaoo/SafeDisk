@@ -18,6 +18,11 @@ const configuredOrigins = (process.env.FRONTEND_ORIGIN ?? "http://localhost:5173
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+app.use((_request, response, next) => {
+  response.header("Access-Control-Allow-Private-Network", "true");
+  next();
+});
+
 app.use(
   cors({
     origin(origin, callback) {
