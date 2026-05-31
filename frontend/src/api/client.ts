@@ -6,6 +6,16 @@ const DEFAULT_API_BASE_URL = import.meta.env.VITE_DEFAULT_API_URL ?? "http://loc
 const CLOUD_API_BASE_URL = import.meta.env.VITE_CLOUD_API_URL ?? "https://safedisk.onrender.com";
 const API_BASE_URL_STORAGE_KEY = "safe-disk-api-url";
 const API_BASE_URL_USER_SET_KEY = "safe-disk-api-url-user-set";
+const LOCAL_API_CANDIDATES = [
+  DEFAULT_API_BASE_URL,
+  "http://localhost:3335",
+  "http://localhost:3336",
+  "http://localhost:3340",
+  "http://127.0.0.1:3333",
+  "http://127.0.0.1:3335",
+  "http://127.0.0.1:3336",
+  "http://127.0.0.1:3340"
+];
 
 function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, "");
@@ -23,6 +33,20 @@ export function getApiBaseUrl(): string {
   }
 
   return stored ? normalizeBaseUrl(stored) : DEFAULT_API_BASE_URL;
+}
+
+function wasApiBaseUrlUserSet(): boolean {
+  return typeof window !== "undefined" && window.localStorage.getItem(API_BASE_URL_USER_SET_KEY) === "1";
+}
+
+function rememberDetectedApiBaseUrl(value: string): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(API_BASE_URL_STORAGE_KEY, normalizeBaseUrl(value));
+  window.localStorage.removeItem(API_BASE_URL_USER_SET_KEY);
+  window.dispatchEvent(new Event("safe-disk-api-url-changed"));
 }
 
 export function setApiBaseUrl(value: string): string {
@@ -44,8 +68,20 @@ export function isUsingCloudBackend(): boolean {
   return getApiBaseUrl().includes("onrender.com");
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+function isLocalDefaultMode(baseUrl: string): boolean {
+  return !wasApiBaseUrlUserSet() && LOCAL_API_CANDIDATES.includes(baseUrl);
+}
+
+function shouldTryLocalFallback(error: unknown): boolean {
+  if (error instanceof TypeError) {
+    return true;
+  }
+
+  return error instanceof Error && /failed to fetch|networkerror|load failed/i.test(error.message);
+}
+
+async function requestFromBase<T>(baseUrl: string, path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${baseUrl}${path}`, {
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {})
@@ -67,6 +103,31 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const baseUrl = getApiBaseUrl();
+
+  try {
+    return await requestFromBase<T>(baseUrl, path, init);
+  } catch (error) {
+    if (!isLocalDefaultMode(baseUrl) || !shouldTryLocalFallback(error)) {
+      throw error;
+    }
+
+    const candidates = Array.from(new Set(LOCAL_API_CANDIDATES.map(normalizeBaseUrl))).filter((candidate) => candidate !== baseUrl);
+    for (const candidate of candidates) {
+      try {
+        const result = await requestFromBase<T>(candidate, path, init);
+        rememberDetectedApiBaseUrl(candidate);
+        return result;
+      } catch {
+        // Try the next local agent candidate.
+      }
+    }
+
+    throw error;
+  }
+}
+
 export const api = {
   get baseUrl() {
     return getApiBaseUrl();
@@ -76,6 +137,7 @@ export const api = {
   setBaseUrl: setApiBaseUrl,
   resetBaseUrl: resetApiBaseUrl,
   isUsingCloudBackend,
+  localCandidates: LOCAL_API_CANDIDATES,
   getDisks: () => request<DiskInfo[]>("/api/disks"),
   getDisk: (id: string) => request<DiskInfo>(`/api/disks/${encodeURIComponent(id)}`),
   getSmartctl: () => request<SmartctlDetection>("/api/disks/smartctl"),

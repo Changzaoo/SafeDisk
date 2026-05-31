@@ -7,7 +7,8 @@ import { relocationRouter } from "./routes/relocation.routes.js";
 import { transferRouter } from "./routes/transfer.routes.js";
 import { ensureLogDirectory, logEvent } from "./utils/logger.js";
 
-const PORT = Number(process.env.PORT ?? 3333);
+const PREFERRED_PORT = Number(process.env.PORT ?? 3333);
+const PORT_CANDIDATES = process.env.PORT ? [PREFERRED_PORT] : [PREFERRED_PORT, 3335, 3336, 3340];
 const app = express();
 
 initializeDatabase();
@@ -32,10 +33,12 @@ app.use(
       }
 
       const isConfigured = configuredOrigins.includes(origin);
-      const isLocalDev = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
-      const isVercelApp = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
-      callback(null, isConfigured || isLocalDev || isVercelApp);
-    }
+      const isLocalDev = /^http:\/\/(localhost|127\.0\.0\.1):\d+$/i.test(origin);
+      const isSafeDiskVercel = origin === "https://safedisk.vercel.app";
+      const isVercelPreview = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+      callback(null, isConfigured || isLocalDev || isSafeDiskVercel || isVercelPreview);
+    },
+    optionsSuccessStatus: 204
   })
 );
 app.use(express.json({ limit: "1mb" }));
@@ -57,6 +60,21 @@ const errorHandler: ErrorRequestHandler = async (error, _request, response, _nex
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`SafeDisk Transfer backend em http://localhost:${PORT}`);
-});
+function listenOnAvailablePort(index = 0): void {
+  const port = PORT_CANDIDATES[index];
+  const server = app.listen(port, () => {
+    console.log(`SafeDisk Transfer backend em http://localhost:${port}`);
+  });
+
+  server.on("error", (error: NodeJS.ErrnoException) => {
+    if (error.code === "EADDRINUSE" && !process.env.PORT && index < PORT_CANDIDATES.length - 1) {
+      console.warn(`Porta ${port} em uso. Tentando ${PORT_CANDIDATES[index + 1]}...`);
+      listenOnAvailablePort(index + 1);
+      return;
+    }
+
+    throw error;
+  });
+}
+
+listenOnAvailablePort();

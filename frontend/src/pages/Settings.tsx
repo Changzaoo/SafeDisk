@@ -55,9 +55,9 @@ export function Settings({
   }
 
   function useLocalBackend() {
-    const next = api.setBaseUrl("http://localhost:3333");
+    const next = api.resetBaseUrl();
     setApiUrl(next);
-    notify("API local selecionada. Mantenha o backend rodando no Windows.", "success");
+    notify("API local selecionada. O app tentara detectar 3333, 3335, 3336 ou 3340.", "success");
   }
 
   function useCloudBackend() {
@@ -98,7 +98,7 @@ export function Settings({
           </div>
           <div className="notice notice-warning inline-notice">
             <Cloud size={18} />
-            <span>O padrao do SafeDisk e o backend local em http://localhost:3333, porque so ele consegue ver discos e mover pastas deste PC.</span>
+            <span>O padrao do SafeDisk e o backend local. Se 3333 estiver ocupada, o backend tenta 3335, 3336 ou 3340 e o frontend detecta automaticamente.</span>
           </div>
         </div>
 

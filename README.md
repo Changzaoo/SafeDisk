@@ -30,6 +30,8 @@ URLs padrao:
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3333
 
+Se a porta `3333` ja estiver ocupada, o backend local tenta automaticamente `3335`, `3336` e `3340`. O frontend publicado tambem tenta detectar essas portas locais.
+
 ## Usar o frontend online com discos locais
 
 O site publicado em `https://safedisk.vercel.app` precisa de um backend rodando no seu Windows para enxergar HDs/SSDs e mover pastas locais. O backend hospedado no Render nao consegue acessar sua maquina.
@@ -45,9 +47,10 @@ npm run dev:backend
 Depois, no site:
 
 1. Abra `Configuracoes`.
-2. O frontend ja usa `http://localhost:3333` como padrao.
-3. Confirme em `Configuracoes > Conexao da API` que o backend ativo ficou `http://localhost:3333`.
-4. Volte para `Dashboard` ou `Saude`.
+2. O frontend ja usa backend local como padrao.
+3. Se `3333` estiver ocupada, ele tenta detectar `3335`, `3336` ou `3340`.
+4. Confirme em `Configuracoes > Conexao da API` qual backend local ficou ativo.
+5. Volte para `Dashboard` ou `Saude`.
 
 Se quiser SMART avancado no Windows, instale o smartmontools localmente:
 
