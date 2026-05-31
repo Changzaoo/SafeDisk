@@ -4,6 +4,7 @@ import type {
   DiskInfo,
   DiskKind,
   FreeSpaceInfo,
+  SmartAttribute,
   SmartReport,
   VolumeInfo
 } from "../types/disk.js";
@@ -28,6 +29,7 @@ interface PsPhysicalDisk {
   DeviceId?: number | string;
   FriendlyName?: string;
   SerialNumber?: string;
+  UniqueId?: string;
   MediaType?: string;
   BusType?: string;
   Size?: number;
@@ -52,15 +54,48 @@ interface PsPartition {
   Type?: string;
 }
 
+interface PsReliabilityCounter {
+  DeviceId?: number | string;
+  FriendlyName?: string;
+  SerialNumber?: string;
+  UniqueId?: string;
+  Temperature?: number;
+  TemperatureMax?: number;
+  PowerOnHours?: number;
+  ReadErrorsTotal?: number;
+  WriteErrorsTotal?: number;
+  Wear?: number;
+  StartStopCycleCount?: number;
+  LoadUnloadCycleCount?: number;
+  Error?: string;
+}
+
+interface PsSmartPredictData {
+  InstanceName?: string;
+  VendorSpecific?: number[] | number;
+}
+
+interface PsSmartPredictStatus {
+  InstanceName?: string;
+  PredictFailure?: boolean;
+  Reason?: number;
+}
+
 interface PowerShellDiskPayload {
   Disks?: PsDisk[] | PsDisk;
   Physical?: PsPhysicalDisk[] | PsPhysicalDisk;
   Volumes?: PsVolume[] | PsVolume;
   Partitions?: PsPartition[] | PsPartition;
+  Reliability?: PsReliabilityCounter[] | PsReliabilityCounter;
+  SmartPredictData?: PsSmartPredictData[] | PsSmartPredictData;
+  SmartPredictStatus?: PsSmartPredictStatus[] | PsSmartPredictStatus;
   DisksError?: string;
   PhysicalError?: string;
   VolumesError?: string;
   PartitionsError?: string;
+  ReliabilityError?: string;
+  SmartPredictDataError?: string;
+  SmartPredictStatusError?: string;
 }
 
 interface WmicDisk {
@@ -69,6 +104,15 @@ interface WmicDisk {
   Model?: string;
   Size?: string;
   Status?: string;
+}
+
+interface NativeSmartAttribute extends SmartAttribute {
+  rawNumber?: number;
+  rawBytes: number[];
+}
+
+interface NativeSmartReport extends SmartReport {
+  instanceName?: string;
 }
 
 const UNKNOWN_SMART_MESSAGE = "Indicadores avancados indisponiveis. Usando dados basicos do Windows.";
@@ -91,6 +135,31 @@ function toNumber(value: unknown): number | undefined {
   }
 
   return undefined;
+}
+
+function firstNumber(...values: unknown[]): number | undefined {
+  for (const value of values) {
+    const parsed = toNumber(value);
+    if (parsed != null) {
+      return parsed;
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeIdentifier(value: unknown): string {
+  return String(value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function identifierMatches(source: unknown, target: unknown): boolean {
+  const normalizedSource = normalizeIdentifier(source);
+  const normalizedTarget = normalizeIdentifier(target);
+  return Boolean(
+    normalizedSource &&
+      normalizedTarget &&
+      (normalizedSource.includes(normalizedTarget) || normalizedTarget.includes(normalizedSource))
+  );
 }
 
 function normalizeStatus(value: unknown): DiskHealthStatus {
@@ -134,6 +203,67 @@ function worstStatus(a: DiskHealthStatus, b: DiskHealthStatus): DiskHealthStatus
   };
 
   return weight[b] > weight[a] ? b : a;
+}
+
+function combineStatus(...statuses: DiskHealthStatus[]): DiskHealthStatus {
+  let combined: DiskHealthStatus = "unknown";
+
+  for (const status of statuses) {
+    if (status === "unknown") {
+      continue;
+    }
+
+    combined = combined === "unknown" ? status : worstStatus(combined, status);
+  }
+
+  return combined;
+}
+
+function hasReliabilityData(counter: PsReliabilityCounter | undefined): boolean {
+  return Boolean(
+    counter &&
+      !counter.Error &&
+      [
+        counter.Temperature,
+        counter.TemperatureMax,
+        counter.PowerOnHours,
+        counter.ReadErrorsTotal,
+        counter.WriteErrorsTotal,
+        counter.Wear,
+        counter.StartStopCycleCount,
+        counter.LoadUnloadCycleCount
+      ].some((value) => toNumber(value) != null)
+  );
+}
+
+function reliabilityStatus(counter: PsReliabilityCounter | undefined): DiskHealthStatus {
+  if (!hasReliabilityData(counter)) {
+    return "unknown";
+  }
+
+  let status: DiskHealthStatus = "healthy";
+  const temperature = toNumber(counter?.Temperature);
+  const wear = toNumber(counter?.Wear);
+  const readErrors = toNumber(counter?.ReadErrorsTotal) ?? 0;
+  const writeErrors = toNumber(counter?.WriteErrorsTotal) ?? 0;
+
+  if ((temperature ?? 0) >= 65) {
+    status = worstStatus(status, "critical");
+  } else if ((temperature ?? 0) >= 55) {
+    status = worstStatus(status, "warning");
+  }
+
+  if ((wear ?? 0) >= 95) {
+    status = worstStatus(status, "critical");
+  } else if ((wear ?? 0) >= 80) {
+    status = worstStatus(status, "warning");
+  }
+
+  if (readErrors > 0 || writeErrors > 0) {
+    status = worstStatus(status, "warning");
+  }
+
+  return status;
 }
 
 function normalizeKind(mediaType?: string, busType?: string, model?: string): DiskKind {
@@ -183,6 +313,201 @@ function smartStatus(report: SmartReport): DiskHealthStatus {
   return status;
 }
 
+const SMART_ATTRIBUTE_NAMES: Record<number, string> = {
+  1: "Read_Error_Rate",
+  5: "Reallocated_Sector_Ct",
+  9: "Power_On_Hours",
+  12: "Power_Cycle_Count",
+  177: "Wear_Leveling_Count",
+  181: "Program_Fail_Count",
+  182: "Erase_Fail_Count",
+  187: "Reported_Uncorrect",
+  190: "Airflow_Temperature_Cel",
+  194: "Temperature_Celsius",
+  195: "Hardware_ECC_Recovered",
+  197: "Current_Pending_Sector",
+  198: "Offline_Uncorrectable",
+  199: "UDMA_CRC_Error_Count",
+  202: "Percent_Lifetime_Remain",
+  231: "SSD_Life_Left",
+  233: "Media_Wearout_Indicator",
+  241: "Total_LBAs_Written",
+  242: "Total_LBAs_Read"
+};
+
+function smartAttributeName(id: number): string {
+  return SMART_ATTRIBUTE_NAMES[id] ?? `SMART_${id}`;
+}
+
+function rawBytesToNumber(bytes: number[]): number | undefined {
+  if (bytes.length === 0) {
+    return undefined;
+  }
+
+  return bytes.reduce((sum, byte, index) => sum + byte * 2 ** (index * 8), 0);
+}
+
+function toByteArray(value: number[] | number | undefined): number[] {
+  if (Array.isArray(value)) {
+    return value.filter((item) => Number.isInteger(item) && item >= 0 && item <= 255);
+  }
+  if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 255) {
+    return [value];
+  }
+  return [];
+}
+
+function plausibleTemperature(value: number | undefined): number | undefined {
+  return value != null && value >= 0 && value <= 120 ? value : undefined;
+}
+
+function nativeAttributeStatus(id: number, rawNumber: number | undefined, temperatureC: number | undefined): DiskHealthStatus | undefined {
+  if ([5, 187, 197, 198].includes(id)) {
+    if ((rawNumber ?? 0) >= 50) {
+      return "critical";
+    }
+    if ((rawNumber ?? 0) > 0) {
+      return "warning";
+    }
+  }
+
+  if ([190, 194].includes(id)) {
+    if ((temperatureC ?? 0) >= 65) {
+      return "critical";
+    }
+    if ((temperatureC ?? 0) >= 55) {
+      return "warning";
+    }
+  }
+
+  if (id === 199 && (rawNumber ?? 0) > 0) {
+    return "warning";
+  }
+
+  return undefined;
+}
+
+function parseNativeSmartAttributes(data: PsSmartPredictData): NativeSmartAttribute[] {
+  const bytes = toByteArray(data.VendorSpecific);
+  const attributes: NativeSmartAttribute[] = [];
+
+  for (let offset = 2; offset + 12 <= bytes.length; offset += 12) {
+    const id = bytes[offset];
+    if (!id) {
+      continue;
+    }
+
+    const rawBytes = bytes.slice(offset + 5, offset + 11);
+    const rawNumber = rawBytesToNumber(rawBytes);
+    const temperatureC = [190, 194].includes(id) ? plausibleTemperature(rawBytes[0]) : undefined;
+    attributes.push({
+      id,
+      name: smartAttributeName(id),
+      value: bytes[offset + 3],
+      worst: bytes[offset + 4],
+      raw: String(temperatureC ?? rawNumber ?? ""),
+      rawNumber,
+      rawBytes,
+      status: nativeAttributeStatus(id, rawNumber, temperatureC)
+    });
+  }
+
+  return attributes;
+}
+
+function findAttributeNumber(attributes: NativeSmartAttribute[], ids: number[]): number | undefined {
+  return attributes.find((attribute) => attribute.id != null && ids.includes(attribute.id))?.rawNumber;
+}
+
+function findAttributeTemperature(attributes: NativeSmartAttribute[]): number | undefined {
+  for (const attribute of attributes) {
+    if (attribute.id != null && [190, 194].includes(attribute.id)) {
+      const temperature = plausibleTemperature(attribute.rawBytes[0]);
+      if (temperature != null) {
+        return temperature;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function findSmartPredictStatus(data: PsSmartPredictData, statuses: PsSmartPredictStatus[]): PsSmartPredictStatus | undefined {
+  return statuses.find((status) => normalizeIdentifier(status.InstanceName) === normalizeIdentifier(data.InstanceName));
+}
+
+function buildNativeSmartReport(data: PsSmartPredictData, status?: PsSmartPredictStatus): NativeSmartReport | undefined {
+  const attributes = parseNativeSmartAttributes(data);
+  if (attributes.length === 0 && status?.PredictFailure == null) {
+    return undefined;
+  }
+
+  const reallocatedSectors = findAttributeNumber(attributes, [5]);
+  const pendingSectors = findAttributeNumber(attributes, [197]);
+  const uncorrectableSectors = findAttributeNumber(attributes, [187, 198]);
+  const crcErrors = findAttributeNumber(attributes, [199]);
+  const smartErrors = [pendingSectors, uncorrectableSectors, crcErrors]
+    .filter((value): value is number => value != null)
+    .reduce((sum, value) => sum + value, 0);
+
+  return {
+    available: true,
+    instanceName: data.InstanceName,
+    overallPassed: status?.PredictFailure == null ? undefined : !status.PredictFailure,
+    temperatureC: findAttributeTemperature(attributes),
+    powerOnHours: findAttributeNumber(attributes, [9]),
+    reallocatedSectors,
+    smartErrors: smartErrors > 0 ? smartErrors : undefined,
+    attributes
+  };
+}
+
+function nativeSmartReportsFromPayload(payload: PowerShellDiskPayload): NativeSmartReport[] {
+  const statuses = asArray(payload.SmartPredictStatus);
+  return asArray(payload.SmartPredictData)
+    .map((data) => buildNativeSmartReport(data, findSmartPredictStatus(data, statuses)))
+    .filter((report): report is NativeSmartReport => Boolean(report));
+}
+
+function findReliabilityCounter(
+  disk: PsDisk,
+  physicalDisk: PsPhysicalDisk | undefined,
+  counters: PsReliabilityCounter[],
+  index: number
+): PsReliabilityCounter | undefined {
+  const usableCounters = counters.filter((counter) => hasReliabilityData(counter));
+  return (
+    usableCounters.find(
+      (counter) =>
+        String(counter.DeviceId ?? "") === String(physicalDisk?.DeviceId ?? disk.Number ?? "") ||
+        String(counter.DeviceId ?? "") === String(disk.Number ?? "")
+    ) ??
+    usableCounters.find(
+      (counter) =>
+        identifierMatches(counter.SerialNumber, disk.SerialNumber ?? physicalDisk?.SerialNumber) ||
+        identifierMatches(counter.UniqueId, physicalDisk?.UniqueId) ||
+        identifierMatches(counter.FriendlyName, disk.FriendlyName ?? physicalDisk?.FriendlyName)
+    ) ??
+    usableCounters[index]
+  );
+}
+
+function findNativeSmartReport(
+  disk: PsDisk,
+  physicalDisk: PsPhysicalDisk | undefined,
+  reports: NativeSmartReport[],
+  index: number
+): NativeSmartReport | undefined {
+  return (
+    reports.find(
+      (report) =>
+        identifierMatches(report.instanceName, disk.SerialNumber ?? physicalDisk?.SerialNumber) ||
+        identifierMatches(report.instanceName, physicalDisk?.UniqueId) ||
+        identifierMatches(report.instanceName, disk.FriendlyName ?? physicalDisk?.FriendlyName)
+    ) ?? reports[index]
+  );
+}
+
 function buildHealthMessage(status: DiskHealthStatus, smartAvailable: boolean): string {
   if (!smartAvailable && status === "unknown") {
     return UNKNOWN_SMART_MESSAGE;
@@ -212,9 +537,41 @@ async function readWindowsDiskPayload(): Promise<PowerShellDiskPayload> {
   const script = `
 $result = [ordered]@{}
 try { $result.Disks = @(Get-Disk | Select-Object Number,FriendlyName,SerialNumber,BusType,PartitionStyle,HealthStatus,OperationalStatus,Size,IsBoot,IsSystem) } catch { $result.DisksError = $_.Exception.Message }
-try { $result.Physical = @(Get-PhysicalDisk | Select-Object DeviceId,FriendlyName,SerialNumber,MediaType,BusType,Size,HealthStatus,OperationalStatus) } catch { $result.PhysicalError = $_.Exception.Message }
+try { $result.Physical = @(Get-PhysicalDisk | Select-Object DeviceId,FriendlyName,SerialNumber,UniqueId,MediaType,BusType,Size,HealthStatus,OperationalStatus) } catch { $result.PhysicalError = $_.Exception.Message }
 try { $result.Volumes = @(Get-Volume | Select-Object DriveLetter,FileSystemLabel,FileSystem,SizeRemaining,Size,HealthStatus,Path) } catch { $result.VolumesError = $_.Exception.Message }
 try { $result.Partitions = @(Get-Partition | Select-Object DiskNumber,DriveLetter,Size,Type) } catch { $result.PartitionsError = $_.Exception.Message }
+try {
+  $result.Reliability = @(Get-PhysicalDisk | ForEach-Object {
+    $disk = $_
+    try {
+      $counter = $disk | Get-StorageReliabilityCounter
+      [pscustomobject]@{
+        DeviceId = $disk.DeviceId
+        FriendlyName = $disk.FriendlyName
+        SerialNumber = $disk.SerialNumber
+        UniqueId = $disk.UniqueId
+        Temperature = $counter.Temperature
+        TemperatureMax = $counter.TemperatureMax
+        PowerOnHours = $counter.PowerOnHours
+        ReadErrorsTotal = $counter.ReadErrorsTotal
+        WriteErrorsTotal = $counter.WriteErrorsTotal
+        Wear = $counter.Wear
+        StartStopCycleCount = $counter.StartStopCycleCount
+        LoadUnloadCycleCount = $counter.LoadUnloadCycleCount
+      }
+    } catch {
+      [pscustomobject]@{
+        DeviceId = $disk.DeviceId
+        FriendlyName = $disk.FriendlyName
+        SerialNumber = $disk.SerialNumber
+        UniqueId = $disk.UniqueId
+        Error = $_.Exception.Message
+      }
+    }
+  })
+} catch { $result.ReliabilityError = $_.Exception.Message }
+try { $result.SmartPredictData = @(Get-CimInstance -Namespace root\\wmi -ClassName MSStorageDriver_FailurePredictData | Select-Object InstanceName,VendorSpecific) } catch { $result.SmartPredictDataError = $_.Exception.Message }
+try { $result.SmartPredictStatus = @(Get-CimInstance -Namespace root\\wmi -ClassName MSStorageDriver_FailurePredictStatus | Select-Object InstanceName,PredictFailure,Reason) } catch { $result.SmartPredictStatusError = $_.Exception.Message }
 $result | ConvertTo-Json -Depth 8 -Compress
 `;
   const { stdout } = await runPowerShell(script, 15000);
@@ -306,6 +663,8 @@ function buildDisksFromPayload(payload: PowerShellDiskPayload): DiskInfo[] {
   const physical = asArray(payload.Physical);
   const volumes = asArray(payload.Volumes);
   const partitions = asArray(payload.Partitions);
+  const reliabilityCounters = asArray(payload.Reliability);
+  const nativeSmartReports = nativeSmartReportsFromPayload(payload);
   const volumeByLetter = new Map(
     volumes
       .filter((volume) => volume.DriveLetter)
@@ -326,12 +685,17 @@ function buildDisksFromPayload(payload: PowerShellDiskPayload): DiskInfo[] {
 
   return sources.map((disk, index) => {
     const physicalMatch =
+      physical.find((item) => String(item.DeviceId ?? "") === String(disk.Number ?? "")) ??
       physical.find((item) => item.SerialNumber && disk.SerialNumber && item.SerialNumber === disk.SerialNumber) ??
       physical[index];
+    const reliabilityMatch = findReliabilityCounter(disk, physicalMatch, reliabilityCounters, index);
+    const nativeSmartReport = findNativeSmartReport(disk, physicalMatch, nativeSmartReports, index);
     const mediaType = physicalMatch?.MediaType;
     const busType = disk.BusType ?? physicalMatch?.BusType;
     const model = disk.FriendlyName ?? physicalMatch?.FriendlyName ?? `Disco ${disk.Number ?? index}`;
-    const basicStatus = worstStatus(normalizeStatus(disk.HealthStatus), normalizeStatus(disk.OperationalStatus));
+    const basicStatus = combineStatus(normalizeStatus(disk.HealthStatus), normalizeStatus(disk.OperationalStatus));
+    const advancedStatus = combineStatus(reliabilityStatus(reliabilityMatch), nativeSmartReport ? smartStatus(nativeSmartReport) : "unknown");
+    const combinedStatus = combineStatus(basicStatus, advancedStatus);
     const diskNumber = typeof disk.Number === "number" ? disk.Number : index;
     const diskVolumes = partitions
       .filter((partition) => partition.DiskNumber === diskNumber)
@@ -340,6 +704,10 @@ function buildDisksFromPayload(payload: PowerShellDiskPayload): DiskInfo[] {
     const freeBytes = diskVolumes.reduce((sum, volume) => sum + (volume.freeBytes ?? 0), 0);
     const volumeSizeBytes = diskVolumes.reduce((sum, volume) => sum + (volume.sizeBytes ?? 0), 0);
     const usedBytes = volumeSizeBytes > 0 ? volumeSizeBytes - freeBytes : undefined;
+    const readErrors = toNumber(reliabilityMatch?.ReadErrorsTotal) ?? 0;
+    const writeErrors = toNumber(reliabilityMatch?.WriteErrorsTotal) ?? 0;
+    const reliabilityErrors = readErrors + writeErrors;
+    const hasAdvancedData = hasReliabilityData(reliabilityMatch) || Boolean(nativeSmartReport?.available);
 
     return {
       id: `disk-${diskNumber}`,
@@ -350,16 +718,21 @@ function buildDisksFromPayload(payload: PowerShellDiskPayload): DiskInfo[] {
       sizeBytes: toNumber(disk.Size) ?? toNumber(physicalMatch?.Size) ?? volumeSizeBytes,
       usedBytes,
       freeBytes: freeBytes > 0 ? freeBytes : undefined,
-      status: basicStatus,
-      statusLabel: statusLabel(basicStatus),
-      healthMessage: buildHealthMessage(basicStatus, false),
+      status: combinedStatus,
+      statusLabel: statusLabel(combinedStatus),
+      healthMessage: buildHealthMessage(combinedStatus, hasAdvancedData),
+      temperatureC: firstNumber(reliabilityMatch?.Temperature, nativeSmartReport?.temperatureC),
+      powerOnHours: firstNumber(reliabilityMatch?.PowerOnHours, nativeSmartReport?.powerOnHours),
+      reallocatedSectors: nativeSmartReport?.reallocatedSectors,
+      smartErrors: firstNumber(nativeSmartReport?.smartErrors, reliabilityErrors > 0 ? reliabilityErrors : undefined),
+      wearLevelPercent: firstNumber(reliabilityMatch?.Wear, nativeSmartReport?.wearLevelPercent),
       mediaType,
       busType,
       isBoot: disk.IsBoot,
       isSystem: disk.IsSystem,
       volumes: diskVolumes,
-      smartAvailable: false,
-      smartAttributes: []
+      smartAvailable: hasAdvancedData,
+      smartAttributes: nativeSmartReport?.attributes ?? []
     };
   });
 }
@@ -367,18 +740,12 @@ function buildDisksFromPayload(payload: PowerShellDiskPayload): DiskInfo[] {
 async function enrichWithSmart(disks: DiskInfo[]): Promise<DiskInfo[]> {
   const detection = await detectSmartctl();
   if (!detection.installed) {
-    return disks.map((disk) => ({
-      ...disk,
-      healthMessage: disk.healthMessage ?? UNKNOWN_SMART_MESSAGE
-    }));
+    return disks;
   }
 
   const devices = await listSmartDevices();
   if (devices.length === 0) {
-    return disks.map((disk) => ({
-      ...disk,
-      healthMessage: "smartctl instalado, mas nenhum dispositivo SMART foi aberto. Talvez seja necessario executar como administrador."
-    }));
+    return disks;
   }
 
   const enriched: DiskInfo[] = [];
@@ -398,19 +765,19 @@ async function enrichWithSmart(disks: DiskInfo[]): Promise<DiskInfo[]> {
       continue;
     }
 
-    const combinedStatus = worstStatus(disk.status, smartStatus(report));
+    const combinedStatus = combineStatus(disk.status, smartStatus(report));
     enriched.push({
       ...disk,
       status: combinedStatus,
       statusLabel: statusLabel(combinedStatus),
       healthMessage: buildHealthMessage(combinedStatus, true),
-      temperatureC: report.temperatureC,
-      powerOnHours: report.powerOnHours,
-      reallocatedSectors: report.reallocatedSectors,
-      smartErrors: report.smartErrors,
-      wearLevelPercent: report.wearLevelPercent,
+      temperatureC: report.temperatureC ?? disk.temperatureC,
+      powerOnHours: report.powerOnHours ?? disk.powerOnHours,
+      reallocatedSectors: report.reallocatedSectors ?? disk.reallocatedSectors,
+      smartErrors: report.smartErrors ?? disk.smartErrors,
+      wearLevelPercent: report.wearLevelPercent ?? disk.wearLevelPercent,
       smartAvailable: true,
-      smartAttributes: report.attributes
+      smartAttributes: report.attributes.length > 0 ? report.attributes : disk.smartAttributes
     });
   }
 
