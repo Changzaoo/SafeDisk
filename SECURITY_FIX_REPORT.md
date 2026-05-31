@@ -23,7 +23,7 @@ Data: 2026-05-31
 | API_001 - Swagger/API docs publico | Media | `frontend/vercel.json`, `backend/src/index.ts` | Rotas `/swagger`, `/api-docs`, `/docs`, `/openapi*`, `/swagger.json` retornam 404. | `curl -i https://safedisk.vercel.app/swagger` |
 | API_002 - GraphQL publico | Media | `frontend/vercel.json`, `backend/src/index.ts` | `/graphql` retorna 404; nao ha dependencia GraphQL no projeto. | `curl -i https://safedisk.vercel.app/graphql` |
 | AUTHZ_001 - Painel admin acessivel | Alta | `frontend/vercel.json`, `backend/src/index.ts` | `/admin`, `/api/admin`, `/dashboard/admin`, `/painel*` retornam 401 com `WWW-Authenticate`. Nao ha painel admin real. | `curl -i https://safedisk.vercel.app/admin` |
-| API_003 - Debug/diagnostico publico | Alta | `frontend/vercel.json`, `backend/src/index.ts` | `/debug`, `/diagnostics`, `/api/debug`, `/api/env`, `/api/config`, `/api/status` retornam 404. Healthcheck retorna apenas `{ "ok": true }`. | `curl -i https://safedisk.vercel.app/api/debug` |
+| API_003 - Debug/diagnostico publico | Alta | `frontend/vercel.json`, `backend/src/index.ts` | `/debug`, `/diagnostics`, `/server-status`, `/api/debug`, `/api/env`, `/api/config`, `/api/status` retornam 404. Healthcheck retorna apenas `{ "ok": true }`. | `curl -i https://safedisk.vercel.app/server-status` |
 | SECRET_004 - `.env` publico | Critica | `frontend/vercel.json`, `.gitignore`, `.env.example`, `backend/.env.example` | Paths sensiveis bloqueados antes do fallback SPA; `.gitignore` reforcado; examples sem valores reais. Nenhum `.env` encontrado em `public/`, `dist/`, `build/`, `static/` ou `assets/`. | `curl -i https://safedisk.vercel.app/.env` |
 | Erros em producao | Media | `backend/src/index.ts` | Error handler global remove detalhes em `NODE_ENV=production`; stack trace nao e retornado ao cliente. | Forcar erro de validacao em API e confirmar resposta generica em producao. |
 | Rate limit basico | Media | `backend/src/index.ts` | Rate limit em memoria para `/api/*` com `RATE_LIMIT_WINDOW_MS` e `RATE_LIMIT_MAX`. | Repetir chamadas a `/api/health` alem do limite configurado. |
@@ -179,6 +179,8 @@ Debug:
 
 ```bash
 curl -i https://safedisk.vercel.app/debug
+curl -i https://safedisk.vercel.app/server-status
+curl -i https://safedisk.vercel.app//server-status
 curl -i https://safedisk.vercel.app/api/debug
 curl -i https://safedisk.vercel.app/api/env
 curl -i https://safedisk.vercel.app/api/config
@@ -220,6 +222,8 @@ Rotas testadas em producao:
 /admin => 401
 /api/admin => 401
 /debug => 404
+/server-status => 404
+//server-status => 404
 /api/debug => 404
 /api/env => 404
 /api/config => 404

@@ -31,7 +31,11 @@
       }
     },
     {
-      "src": "/(?:api(?:/.*)?|settings(?:/.*)?|config(?:/.*)?|swagger(?:/.*)?|api-docs(?:/.*)?|docs(?:/.*)?|openapi(?:\\.json)?|swagger\\.json|graphql(?:/.*)?|debug(?:/.*)?|diagnostics(?:/.*)?|diag(?:/.*)?|test(?:/.*)?|status(?:/.*)?)",
+      "src": "/+server-status(?:/.*)?",
+      "status": 404
+    },
+    {
+      "src": "/(?:api(?:/.*)?|settings(?:/.*)?|config(?:/.*)?|swagger(?:/.*)?|api-docs(?:/.*)?|docs(?:/.*)?|openapi(?:\\.json)?|swagger\\.json|graphql(?:/.*)?|debug(?:/.*)?|diagnostics(?:/.*)?|diag(?:/.*)?|test(?:/.*)?|status(?:/.*)?|server-status(?:/.*)?)",
       "status": 404
     },
     {

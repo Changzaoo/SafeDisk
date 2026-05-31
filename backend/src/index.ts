@@ -27,7 +27,7 @@ const SENSITIVE_PATH_PATTERN =
   /^\/(?:\.env(?:\..*)?|env|secrets\.json|config\.json|\.git(?:\/.*)?|.*\.(?:pem|key))$/i;
 const ADMIN_PATH_PATTERN = /^\/(?:admin|api\/admin|dashboard\/admin|painel|painel-admin|api\/private)(?:\/.*)?$/i;
 const DISABLED_PRODUCTION_PATH_PATTERN =
-  /^\/(?:swagger|api-docs|docs|openapi(?:\.json)?|swagger\.json|graphql|debug|diagnostics|diag|test|settings|config|api\/debug|api\/diagnostics|api\/diag|api\/test|api\/env|api\/config|api\/status)(?:\/.*)?$/i;
+  /^\/(?:swagger|api-docs|docs|openapi(?:\.json)?|swagger\.json|graphql|debug|diagnostics|diag|test|settings|config|server-status|api\/debug|api\/diagnostics|api\/diag|api\/test|api\/env|api\/config|api\/status|api\/server-status)(?:\/.*)?$/i;
 const app = express();
 app.set("trust proxy", 1);
 
@@ -51,9 +51,9 @@ function isAllowedOrigin(origin: string | undefined): boolean {
 
 function decodedPath(request: Request): string {
   try {
-    return decodeURIComponent(request.path);
+    return decodeURIComponent(request.path).replace(/^\/+/, "/");
   } catch {
-    return request.path;
+    return request.path.replace(/^\/+/, "/");
   }
 }
 
