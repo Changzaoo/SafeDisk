@@ -7,8 +7,8 @@ import { relocationRouter } from "./routes/relocation.routes.js";
 import { transferRouter } from "./routes/transfer.routes.js";
 import { ensureLogDirectory, logEvent } from "./utils/logger.js";
 
-const PREFERRED_PORT = Number(process.env.PORT ?? 3333);
-const PORT_CANDIDATES = process.env.PORT ? [PREFERRED_PORT] : [PREFERRED_PORT, 3335, 3336, 3340];
+const PREFERRED_PORT = Number(process.env.PORT ?? 3335);
+const PORT_CANDIDATES = process.env.PORT ? [PREFERRED_PORT] : [PREFERRED_PORT, 3336, 3340, 3341];
 const app = express();
 
 initializeDatabase();

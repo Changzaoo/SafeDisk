@@ -2,24 +2,32 @@ import type { DiskInfo, SmartctlDetection } from "../types/disk";
 import type { RelocationJobSnapshot, RelocationPreview, RelocationRequest } from "../types/relocation";
 import type { HistoryRecord, TransferJobSnapshot, TransferPreview, TransferRequest } from "../types/transfer";
 
-const DEFAULT_API_BASE_URL = import.meta.env.VITE_DEFAULT_API_URL ?? "http://localhost:3333";
+const LOCAL_API_DEFAULT_URL = "http://localhost:3335";
 const CLOUD_API_BASE_URL = import.meta.env.VITE_CLOUD_API_URL ?? "https://safedisk.onrender.com";
 const API_BASE_URL_STORAGE_KEY = "safe-disk-api-url";
 const API_BASE_URL_USER_SET_KEY = "safe-disk-api-url-user-set";
-const LOCAL_API_CANDIDATES = [
-  DEFAULT_API_BASE_URL,
-  "http://localhost:3335",
-  "http://localhost:3336",
-  "http://localhost:3340",
-  "http://127.0.0.1:3333",
-  "http://127.0.0.1:3335",
-  "http://127.0.0.1:3336",
-  "http://127.0.0.1:3340"
-];
+const LEGACY_CONFLICTING_LOCAL_URLS = new Set(["http://localhost:3333", "http://127.0.0.1:3333"]);
 
 function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, "");
 }
+
+function normalizeDefaultApiBaseUrl(value: string | undefined): string {
+  const normalized = normalizeBaseUrl(value ?? LOCAL_API_DEFAULT_URL);
+  return LEGACY_CONFLICTING_LOCAL_URLS.has(normalized) ? LOCAL_API_DEFAULT_URL : normalized;
+}
+
+const DEFAULT_API_BASE_URL = normalizeDefaultApiBaseUrl(import.meta.env.VITE_DEFAULT_API_URL);
+const LOCAL_API_CANDIDATES = [
+  DEFAULT_API_BASE_URL,
+  "http://localhost:3336",
+  "http://localhost:3340",
+  "http://127.0.0.1:3335",
+  "http://127.0.0.1:3336",
+  "http://127.0.0.1:3340",
+  "http://localhost:3341",
+  "http://127.0.0.1:3341"
+];
 
 export function getApiBaseUrl(): string {
   if (typeof window === "undefined") {
@@ -27,12 +35,19 @@ export function getApiBaseUrl(): string {
   }
 
   const stored = window.localStorage.getItem(API_BASE_URL_STORAGE_KEY);
+  const normalizedStored = stored ? normalizeBaseUrl(stored) : undefined;
   const wasUserSet = window.localStorage.getItem(API_BASE_URL_USER_SET_KEY) === "1";
-  if (stored === CLOUD_API_BASE_URL && !wasUserSet) {
+  if (normalizedStored && LEGACY_CONFLICTING_LOCAL_URLS.has(normalizedStored)) {
+    window.localStorage.removeItem(API_BASE_URL_STORAGE_KEY);
+    window.localStorage.removeItem(API_BASE_URL_USER_SET_KEY);
     return DEFAULT_API_BASE_URL;
   }
 
-  return stored ? normalizeBaseUrl(stored) : DEFAULT_API_BASE_URL;
+  if (normalizedStored === CLOUD_API_BASE_URL && !wasUserSet) {
+    return DEFAULT_API_BASE_URL;
+  }
+
+  return normalizedStored ?? DEFAULT_API_BASE_URL;
 }
 
 function wasApiBaseUrlUserSet(): boolean {

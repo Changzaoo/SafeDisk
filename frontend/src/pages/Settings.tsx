@@ -57,7 +57,7 @@ export function Settings({
   function useLocalBackend() {
     const next = api.resetBaseUrl();
     setApiUrl(next);
-    notify("API local selecionada. O app tentara detectar 3333, 3335, 3336 ou 3340.", "success");
+    notify("API local selecionada. O app usara 3335 e tentara 3336, 3340 ou 3341 se necessario.", "success");
   }
 
   function useCloudBackend() {
@@ -98,7 +98,7 @@ export function Settings({
           </div>
           <div className="notice notice-warning inline-notice">
             <Cloud size={18} />
-            <span>O padrao do SafeDisk e o backend local. Se 3333 estiver ocupada, o backend tenta 3335, 3336 ou 3340 e o frontend detecta automaticamente.</span>
+            <span>O padrao do SafeDisk e o backend local em 3335. A porta 3333 foi evitada para nao bater em outros projetos locais.</span>
           </div>
         </div>
 

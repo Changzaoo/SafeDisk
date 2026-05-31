@@ -28,9 +28,9 @@ npm run dev
 URLs padrao:
 
 - Frontend: http://localhost:5173
-- Backend: http://localhost:3333
+- Backend: http://localhost:3335
 
-Se a porta `3333` ja estiver ocupada, o backend local tenta automaticamente `3335`, `3336` e `3340`. O frontend publicado tambem tenta detectar essas portas locais.
+A porta `3333` e evitada porque costuma estar ocupada por outros projetos locais. Se `3335` ja estiver ocupada, o backend local tenta automaticamente `3336`, `3340` e `3341`. O frontend publicado tambem tenta detectar essas portas locais.
 
 ## Usar o frontend online com discos locais
 
@@ -48,7 +48,7 @@ Depois, no site:
 
 1. Abra `Configuracoes`.
 2. O frontend ja usa backend local como padrao.
-3. Se `3333` estiver ocupada, ele tenta detectar `3335`, `3336` ou `3340`.
+3. Ele usa `3335` por padrao e tenta detectar `3336`, `3340` ou `3341` se necessario.
 4. Confirme em `Configuracoes > Conexao da API` qual backend local ficou ativo.
 5. Volte para `Dashboard` ou `Saude`.
 
@@ -61,11 +61,11 @@ winget install smartmontools.smartmontools
 Se alguma porta ja estiver ocupada, rode em duas janelas com portas alternativas:
 
 ```powershell
-$env:PORT="3335"; npm --prefix backend run dev
+$env:PORT="3336"; npm --prefix backend run dev
 ```
 
 ```powershell
-$env:VITE_DEFAULT_API_URL="http://localhost:3335"; npm --prefix frontend run dev -- --host 0.0.0.0 --port 5174
+$env:VITE_DEFAULT_API_URL="http://localhost:3336"; npm --prefix frontend run dev -- --host 0.0.0.0 --port 5174
 ```
 
 ## Build
@@ -107,7 +107,7 @@ Configuracao recomendada:
 - Root directory: `frontend`
 - Environment variable opcional para botao de nuvem: `VITE_CLOUD_API_URL=https://safedisk.onrender.com`
 
-O frontend publicado tambem usa `http://localhost:3333` por padrao, porque a funcao principal do SafeDisk e acessar os discos da maquina do usuario.
+O frontend publicado tambem usa `http://localhost:3335` por padrao, porque a funcao principal do SafeDisk e acessar os discos da maquina do usuario.
 
 URL desejada:
 

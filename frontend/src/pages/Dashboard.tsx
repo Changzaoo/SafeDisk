@@ -54,7 +54,7 @@ export function Dashboard({ notify }: { notify: (message: string, tone?: "succes
           <Cloud size={18} />
           <span>
             Voce esta usando o backend da nuvem. Ele nao consegue acessar os discos deste computador. Para listar seus HDs/SSDs, rode o backend local e use
-            http://localhost:3333 nas configuracoes.
+            http://localhost:3335 nas configuracoes.
           </span>
         </div>
       ) : null}
