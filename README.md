@@ -84,8 +84,24 @@ Variaveis usadas:
 
 - `NODE_VERSION=24.15.0`
 - `ALLOWED_ORIGINS=https://safedisk.vercel.app`
+- `CORS_ORIGINS=https://safedisk.vercel.app` tambem e aceito como alias
 - `SAFEDISK_DB_PATH=/tmp/safedisk.sqlite`
+- `DATABASE_URL=file:/var/data/watchdog.db` tambem e aceito para SQLite
 - `SAFEDISK_LOG_DIR=/tmp/safedisk-logs`
+
+### Autenticacao Firebase
+
+O backend pode exigir login por Firebase Auth com email e senha. Configure no backend:
+
+- `AUTH_REQUIRED=true`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_WEB_API_KEY`
+- `FIREBASE_SERVICE_ACCOUNT_JSON_BASE64` ou `FIREBASE_SERVICE_ACCOUNT_JSON`
+- `AUTH_ALLOWED_EMAILS=email1@dominio.com,email2@dominio.com` para restringir usuarios; vazio aceita qualquer usuario autenticado do projeto Firebase.
+
+O frontend busca a configuracao publica em `/api/auth/config`, abre a tela de login e envia o ID token em `Authorization: Bearer ...` para as chamadas da API. Se o backend estiver hospedado fora da maquina local, defina `VITE_API_BASE_URL` no Vercel apontando para a URL da API.
+
+No Render, o build usa `npm install --include=dev --omit=optional` porque o SafeDisk usa apenas Firebase Auth; os modulos opcionais de Firestore/Storage do Admin SDK nao sao necessarios.
 
 ### Frontend no Vercel
 

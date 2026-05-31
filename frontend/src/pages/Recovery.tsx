@@ -604,12 +604,20 @@ function RecoveryFilePreview({ file }: { file: RecoveryJobSnapshot["results"][nu
   );
 }
 
-function RecoveryReportButton({ jobId, format }: { jobId: string; format: "txt" | "json" }) {
+function RecoveryReportButton({ jobId, format, notify }: { jobId: string; format: "txt" | "json"; notify: Notify }) {
+  const downloadReport = useCallback(async () => {
+    try {
+      await api.downloadRecoveryReport(jobId, format);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Falha ao baixar relatorio.", "error");
+    }
+  }, [format, jobId, notify]);
+
   return (
-    <a className="icon-button label-button" href={api.recoveryReportUrl(jobId, format)}>
+    <button className="icon-button label-button" type="button" onClick={() => void downloadReport()}>
       <Download size={18} />
       {format.toUpperCase()}
-    </a>
+    </button>
   );
 }
 
@@ -618,13 +626,15 @@ function RecoveryResults({
   filter,
   setFilter,
   onOpenFolder,
-  onNewSearch
+  onNewSearch,
+  notify
 }: {
   job?: RecoveryJobSnapshot;
   filter: RecoveryCategory | "all";
   setFilter: (filter: RecoveryCategory | "all") => void;
   onOpenFolder: () => void;
   onNewSearch: () => void;
+  notify: Notify;
 }) {
   const files = useMemo(() => {
     if (!job) {
@@ -666,8 +676,8 @@ function RecoveryResults({
           <RefreshCw size={18} />
           Nova busca
         </button>
-        <RecoveryReportButton format="txt" jobId={job.jobId} />
-        <RecoveryReportButton format="json" jobId={job.jobId} />
+        <RecoveryReportButton format="txt" jobId={job.jobId} notify={notify} />
+        <RecoveryReportButton format="json" jobId={job.jobId} notify={notify} />
       </div>
       <div className="segmented recovery-filter" role="group" aria-label="Filtrar resultados">
         {(Object.keys(categoryLabels) as Array<RecoveryCategory | "all">).map((category) => (
@@ -1150,6 +1160,7 @@ export function Recovery({ notify }: { notify: Notify }) {
           setFilter={setFilter}
           onNewSearch={newSearch}
           onOpenFolder={openFolder}
+          notify={notify}
         />
       ) : null}
 

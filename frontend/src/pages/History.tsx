@@ -24,6 +24,17 @@ export function History({ notify }: { notify: (message: string, tone?: "success"
     void load();
   }, [load]);
 
+  const exportHistory = useCallback(
+    async (format: "json" | "csv") => {
+      try {
+        await api.downloadHistory(format);
+      } catch (error) {
+        notify(error instanceof Error ? error.message : "Falha ao exportar historico.", "error");
+      }
+    },
+    [notify]
+  );
+
   return (
     <section className="page">
       <header className="page-header">
@@ -36,14 +47,14 @@ export function History({ notify }: { notify: (message: string, tone?: "success"
             <RefreshCw size={18} />
             Atualizar
           </button>
-          <a className="icon-button label-button" href={api.historyExportUrl("json")}>
+          <button className="icon-button label-button" type="button" onClick={() => void exportHistory("json")}>
             <Download size={18} />
             JSON
-          </a>
-          <a className="icon-button label-button" href={api.historyExportUrl("csv")}>
+          </button>
+          <button className="icon-button label-button" type="button" onClick={() => void exportHistory("csv")}>
             <Download size={18} />
             CSV
-          </a>
+          </button>
         </div>
       </header>
 

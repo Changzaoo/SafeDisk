@@ -1,4 +1,4 @@
-import { Activity, ArrowRightLeft, FileSearch, History, LayoutDashboard } from "lucide-react";
+import { Activity, ArrowRightLeft, FileSearch, History, LayoutDashboard, LogOut } from "lucide-react";
 
 export type PageId = "dashboard" | "health" | "transfer" | "recovery" | "history";
 
@@ -10,7 +10,17 @@ const items: Array<{ id: PageId; label: string; icon: typeof LayoutDashboard }> 
   { id: "history", label: "Historico", icon: History }
 ];
 
-export function Sidebar({ activePage, onChange }: { activePage: PageId; onChange: (page: PageId) => void }) {
+export function Sidebar({
+  activePage,
+  onChange,
+  userEmail,
+  onSignOut
+}: {
+  activePage: PageId;
+  onChange: (page: PageId) => void;
+  userEmail?: string;
+  onSignOut?: () => void;
+}) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -40,6 +50,16 @@ export function Sidebar({ activePage, onChange }: { activePage: PageId; onChange
           );
         })}
       </nav>
+
+      {userEmail ? (
+        <div className="sidebar-account">
+          <span title={userEmail}>{userEmail}</span>
+          <button className="nav-item sidebar-signout" type="button" onClick={onSignOut} title="Sair">
+            <LogOut size={18} />
+            <span>Sair</span>
+          </button>
+        </div>
+      ) : null}
     </aside>
   );
 }

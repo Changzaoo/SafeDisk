@@ -1,5 +1,6 @@
 import cors from "cors";
 import express, { type ErrorRequestHandler, type NextFunction, type Request, type Response } from "express";
+import { getAllowedEmails, getFirebaseClientConfig, isAuthRequired, requireFirebaseAuth } from "./auth/firebaseAuth.js";
 import { initializeDatabase } from "./db/database.js";
 import { disksRouter } from "./routes/disks.routes.js";
 import { historyRouter } from "./routes/history.routes.js";
@@ -8,8 +9,11 @@ import { recoveryRouter } from "./routes/recovery.routes.js";
 import { transferRouter } from "./routes/transfer.routes.js";
 import { ensureLogDirectory, logEvent } from "./utils/logger.js";
 
-const PREFERRED_PORT = Number(process.env.PORT ?? 3335);
-const PORT_CANDIDATES = process.env.PORT ? [PREFERRED_PORT] : [PREFERRED_PORT, 3336, 3340, 3341];
+const CONFIGURED_PORT = process.env.PORT?.trim();
+const PARSED_PORT = CONFIGURED_PORT ? Number(CONFIGURED_PORT) : 3335;
+const HAS_CONFIGURED_PORT = Number.isInteger(PARSED_PORT) && PARSED_PORT > 0;
+const PREFERRED_PORT = HAS_CONFIGURED_PORT ? PARSED_PORT : 3335;
+const PORT_CANDIDATES = CONFIGURED_PORT && HAS_CONFIGURED_PORT ? [PREFERRED_PORT] : [PREFERRED_PORT, 3336, 3340, 3341];
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const DEFAULT_PRODUCTION_ORIGINS = ["https://safedisk.vercel.app", "https://safe-disk.vercel.app"];
 const DEVELOPMENT_ORIGINS = [
@@ -36,7 +40,10 @@ initializeDatabase();
 await ensureLogDirectory();
 
 function parseAllowedOrigins(): Set<string> {
-  const configured = (process.env.ALLOWED_ORIGINS ?? DEFAULT_PRODUCTION_ORIGINS.join(","))
+  const configuredValue = [process.env.CORS_ORIGINS, process.env.ALLOWED_ORIGINS]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .join(",");
+  const configured = (configuredValue || DEFAULT_PRODUCTION_ORIGINS.join(","))
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
@@ -190,6 +197,22 @@ app.use(express.json({ limit: "1mb" }));
 app.get("/api/health", (_request, response) => {
   response.json({ ok: true });
 });
+
+app.get("/api/auth/config", (_request, response) => {
+  const firebase = getFirebaseClientConfig();
+  if (isAuthRequired() && !firebase) {
+    response.status(500).json({ error: "Firebase Auth nao configurado." });
+    return;
+  }
+
+  response.json({
+    authRequired: isAuthRequired(),
+    firebase: firebase ?? null,
+    emailAllowlistEnabled: getAllowedEmails().size > 0
+  });
+});
+
+app.use(requireFirebaseAuth);
 
 app.use("/api/disks", disksRouter);
 app.use("/api/transfer", transferRouter);

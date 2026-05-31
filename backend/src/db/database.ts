@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { fileURLToPath } from "node:url";
 
 const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS transfer_history (
@@ -38,8 +39,21 @@ ON recovery_history(timestamp DESC);
 
 let database: DatabaseSync | undefined;
 
+function databaseUrlPath(): string | undefined {
+  const value = process.env.DATABASE_URL?.trim();
+  if (!value?.startsWith("file:")) {
+    return undefined;
+  }
+
+  try {
+    return fileURLToPath(new URL(value));
+  } catch {
+    return value.replace(/^file:/, "");
+  }
+}
+
 export function getDatabasePath(): string {
-  return process.env.SAFEDISK_DB_PATH ?? path.resolve(process.cwd(), "data", "safedisk.sqlite");
+  return process.env.SAFEDISK_DB_PATH ?? databaseUrlPath() ?? path.resolve(process.cwd(), "data", "safedisk.sqlite");
 }
 
 export function initializeDatabase(): DatabaseSync {
