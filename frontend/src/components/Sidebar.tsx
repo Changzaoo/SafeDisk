@@ -1,13 +1,12 @@
-import { Activity, ArrowRightLeft, History, LayoutDashboard, Settings } from "lucide-react";
+import { Activity, ArrowRightLeft, History, LayoutDashboard } from "lucide-react";
 
-export type PageId = "dashboard" | "health" | "transfer" | "history" | "settings";
+export type PageId = "dashboard" | "health" | "transfer" | "history";
 
 const items: Array<{ id: PageId; label: string; icon: typeof LayoutDashboard }> = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "health", label: "Saude", icon: Activity },
   { id: "transfer", label: "Transferencia", icon: ArrowRightLeft },
-  { id: "history", label: "Historico", icon: History },
-  { id: "settings", label: "Configuracoes", icon: Settings }
+  { id: "history", label: "Historico", icon: History }
 ];
 
 export function Sidebar({ activePage, onChange }: { activePage: PageId; onChange: (page: PageId) => void }) {

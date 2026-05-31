@@ -553,16 +553,11 @@ a {
   font-size: 12px;
 }
 
-.transfer-form,
-.settings-grid {
+.transfer-form {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
   gap: 14px;
   margin-bottom: 16px;
-}
-
-.settings-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .form-panel {
@@ -775,8 +770,7 @@ a {
 }
 
 @media (max-width: 1100px) {
-  .summary-grid,
-  .settings-grid {
+  .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -806,7 +800,7 @@ a {
   }
 
   .nav-list {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .nav-item {
@@ -828,7 +822,6 @@ a {
   }
 
   .summary-grid,
-  .settings-grid,
   .disk-metrics,
   .detail-grid,
   .path-summary {

@@ -3,21 +3,15 @@ import type { RelocationJobSnapshot, RelocationPreview, RelocationRequest } from
 import type { HistoryRecord, TransferJobSnapshot, TransferPreview, TransferRequest } from "../types/transfer";
 
 const LOCAL_API_DEFAULT_URL = "http://localhost:3335";
-const CLOUD_API_BASE_URL = import.meta.env.VITE_CLOUD_API_URL ?? "https://safedisk.onrender.com";
 const API_BASE_URL_STORAGE_KEY = "safe-disk-api-url";
 const API_BASE_URL_USER_SET_KEY = "safe-disk-api-url-user-set";
-const LEGACY_CONFLICTING_LOCAL_URLS = new Set(["http://localhost:3333", "http://127.0.0.1:3333"]);
+const SETTINGS_STORAGE_KEY = "safe-disk-settings";
 
 function normalizeBaseUrl(value: string): string {
   return value.trim().replace(/\/+$/, "");
 }
 
-function normalizeDefaultApiBaseUrl(value: string | undefined): string {
-  const normalized = normalizeBaseUrl(value ?? LOCAL_API_DEFAULT_URL);
-  return LEGACY_CONFLICTING_LOCAL_URLS.has(normalized) ? LOCAL_API_DEFAULT_URL : normalized;
-}
-
-const DEFAULT_API_BASE_URL = normalizeDefaultApiBaseUrl(import.meta.env.VITE_DEFAULT_API_URL);
+const DEFAULT_API_BASE_URL = LOCAL_API_DEFAULT_URL;
 const LOCAL_API_CANDIDATES = [
   DEFAULT_API_BASE_URL,
   "http://localhost:3336",
@@ -28,63 +22,25 @@ const LOCAL_API_CANDIDATES = [
   "http://localhost:3341",
   "http://127.0.0.1:3341"
 ];
+let detectedApiBaseUrl: string | undefined;
 
 export function getApiBaseUrl(): string {
   if (typeof window === "undefined") {
     return DEFAULT_API_BASE_URL;
   }
 
-  const stored = window.localStorage.getItem(API_BASE_URL_STORAGE_KEY);
-  const normalizedStored = stored ? normalizeBaseUrl(stored) : undefined;
-  const wasUserSet = window.localStorage.getItem(API_BASE_URL_USER_SET_KEY) === "1";
-  if (normalizedStored && LEGACY_CONFLICTING_LOCAL_URLS.has(normalizedStored)) {
-    window.localStorage.removeItem(API_BASE_URL_STORAGE_KEY);
-    window.localStorage.removeItem(API_BASE_URL_USER_SET_KEY);
-    return DEFAULT_API_BASE_URL;
-  }
-
-  if (normalizedStored === CLOUD_API_BASE_URL && !wasUserSet) {
-    return DEFAULT_API_BASE_URL;
-  }
-
-  return normalizedStored ?? DEFAULT_API_BASE_URL;
-}
-
-function wasApiBaseUrlUserSet(): boolean {
-  return typeof window !== "undefined" && window.localStorage.getItem(API_BASE_URL_USER_SET_KEY) === "1";
+  window.localStorage.removeItem(API_BASE_URL_STORAGE_KEY);
+  window.localStorage.removeItem(API_BASE_URL_USER_SET_KEY);
+  window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
+  return detectedApiBaseUrl ?? DEFAULT_API_BASE_URL;
 }
 
 function rememberDetectedApiBaseUrl(value: string): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(API_BASE_URL_STORAGE_KEY, normalizeBaseUrl(value));
-  window.localStorage.removeItem(API_BASE_URL_USER_SET_KEY);
-  window.dispatchEvent(new Event("safe-disk-api-url-changed"));
-}
-
-export function setApiBaseUrl(value: string): string {
-  const normalized = normalizeBaseUrl(value);
-  window.localStorage.setItem(API_BASE_URL_STORAGE_KEY, normalized);
-  window.localStorage.setItem(API_BASE_URL_USER_SET_KEY, "1");
-  window.dispatchEvent(new Event("safe-disk-api-url-changed"));
-  return normalized;
-}
-
-export function resetApiBaseUrl(): string {
-  window.localStorage.removeItem(API_BASE_URL_STORAGE_KEY);
-  window.localStorage.removeItem(API_BASE_URL_USER_SET_KEY);
-  window.dispatchEvent(new Event("safe-disk-api-url-changed"));
-  return DEFAULT_API_BASE_URL;
-}
-
-export function isUsingCloudBackend(): boolean {
-  return getApiBaseUrl().includes("onrender.com");
+  detectedApiBaseUrl = normalizeBaseUrl(value);
 }
 
 function isLocalDefaultMode(baseUrl: string): boolean {
-  return !wasApiBaseUrlUserSet() && LOCAL_API_CANDIDATES.includes(baseUrl);
+  return LOCAL_API_CANDIDATES.includes(baseUrl);
 }
 
 function shouldTryLocalFallback(error: unknown): boolean {
@@ -148,10 +104,6 @@ export const api = {
     return getApiBaseUrl();
   },
   defaultBaseUrl: DEFAULT_API_BASE_URL,
-  cloudBaseUrl: CLOUD_API_BASE_URL,
-  setBaseUrl: setApiBaseUrl,
-  resetBaseUrl: resetApiBaseUrl,
-  isUsingCloudBackend,
   localCandidates: LOCAL_API_CANDIDATES,
   getDisks: () => request<DiskInfo[]>("/api/disks"),
   getDisk: (id: string) => request<DiskInfo>(`/api/disks/${encodeURIComponent(id)}`),

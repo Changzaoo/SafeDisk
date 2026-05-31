@@ -46,11 +46,9 @@ npm run dev:backend
 
 Depois, no site:
 
-1. Abra `Configuracoes`.
-2. O frontend ja usa backend local como padrao.
+1. Abra `Dashboard` ou `Saude`.
+2. O frontend usa o backend local automaticamente.
 3. Ele usa `3335` por padrao e tenta detectar `3336`, `3340` ou `3341` se necessario.
-4. Confirme em `Configuracoes > Conexao da API` qual backend local ficou ativo.
-5. Volte para `Dashboard` ou `Saude`.
 
 Se alguma porta ja estiver ocupada, rode em duas janelas com portas alternativas:
 
@@ -59,7 +57,7 @@ $env:PORT="3336"; npm --prefix backend run dev
 ```
 
 ```powershell
-$env:VITE_DEFAULT_API_URL="http://localhost:3336"; npm --prefix frontend run dev -- --host 0.0.0.0 --port 5174
+npm --prefix frontend run dev -- --host 0.0.0.0 --port 5174
 ```
 
 ## Build
@@ -99,7 +97,6 @@ Configuracao recomendada:
 - Build command: `npm run build`
 - Output directory: `dist`
 - Root directory: `frontend`
-- Environment variable opcional para botao de nuvem: `VITE_CLOUD_API_URL=https://safedisk.onrender.com`
 
 O frontend publicado tambem usa `http://localhost:3335` por padrao, porque a funcao principal do SafeDisk e acessar os discos da maquina do usuario.
 

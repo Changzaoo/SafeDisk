@@ -1,4 +1,4 @@
-import { Cloud, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import { DiskCard } from "../components/DiskCard";
@@ -48,16 +48,6 @@ export function Dashboard({ notify }: { notify: (message: string, tone?: "succes
           Atualizar
         </button>
       </header>
-
-      {api.isUsingCloudBackend() ? (
-        <div className="notice notice-warning">
-          <Cloud size={18} />
-          <span>
-            Voce esta usando o backend da nuvem. Ele nao consegue acessar os discos deste computador. Para listar seus HDs/SSDs, rode o backend local e use
-            http://localhost:3335 nas configuracoes.
-          </span>
-        </div>
-      ) : null}
 
       <div className="summary-grid">
         <div className="summary-tile">
