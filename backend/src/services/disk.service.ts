@@ -71,7 +71,7 @@ interface WmicDisk {
   Status?: string;
 }
 
-const UNKNOWN_SMART_MESSAGE = "SMART avancado indisponivel. Use smartmontools para detalhes.";
+const UNKNOWN_SMART_MESSAGE = "Indicadores avancados indisponiveis. Usando dados basicos do Windows.";
 
 function asArray<T>(value: T[] | T | undefined): T[] {
   if (!value) {

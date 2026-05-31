@@ -52,12 +52,6 @@ Depois, no site:
 4. Confirme em `Configuracoes > Conexao da API` qual backend local ficou ativo.
 5. Volte para `Dashboard` ou `Saude`.
 
-Se quiser SMART avancado no Windows, instale o smartmontools localmente:
-
-```powershell
-winget install smartmontools.smartmontools
-```
-
 Se alguma porta ja estiver ocupada, rode em duas janelas com portas alternativas:
 
 ```powershell
@@ -114,20 +108,10 @@ URL desejada:
 - Frontend: `https://safedisk.vercel.app`
 - Backend: `https://safedisk.onrender.com`
 
-## smartmontools
-
-A aplicacao usa comandos nativos do Windows para status basico. Para SMART avancado, instale o smartmontools:
-
-```powershell
-winget install smartmontools.smartmontools
-```
-
-Depois reinicie o backend. Alguns discos exigem executar o terminal como administrador para leitura SMART.
-
 ## Como usar
 
 1. Abra o dashboard para ver discos, capacidade, espaco livre e status.
-2. Em `Saude`, veja volumes, temperatura, horas de uso e atributos SMART quando disponiveis.
+2. Em `Saude`, veja volumes, status do Windows e indicadores avancados quando ja estiverem disponiveis no sistema.
 3. Em `Transferencia`, informe caminhos absolutos de arquivos ou pastas e uma pasta de destino.
 4. Escolha o tratamento de conflitos: renomear, substituir, ignorar ou comparar hashes.
 5. Use `Previa` antes da transferencia real.
@@ -160,7 +144,7 @@ Para liberar espaco de verdade, desmarque `Manter backup da pasta original` apen
 ## Seguranca
 
 - O frontend nao envia comandos livres ao backend.
-- O backend executa apenas funcoes fixas para PowerShell, WMIC e smartctl.
+- O backend executa apenas funcoes fixas para PowerShell, WMIC e leitura de disco.
 - Caminhos recebidos sao normalizados e precisam ser absolutos.
 - Arquivos `.partial` sao removidos quando uma copia falha.
 - Sobrescrita so ocorre com `conflictMode: "replace"`.

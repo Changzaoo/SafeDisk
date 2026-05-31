@@ -1,8 +1,6 @@
-import { CheckCircle2, Cloud, Monitor, RefreshCw, Save, Trash2 } from "lucide-react";
+import { Cloud, Monitor, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { api } from "../api/client";
-import { StatusBadge } from "../components/StatusBadge";
-import type { SmartctlDetection } from "../types/disk";
 import type { AppSettings } from "../App";
 
 export function Settings({
@@ -14,7 +12,6 @@ export function Settings({
   setSettings: (settings: AppSettings) => void;
   notify: (message: string, tone?: "success" | "error" | "info") => void;
 }) {
-  const [smartctl, setSmartctl] = useState<SmartctlDetection>();
   const [cleanupRoot, setCleanupRoot] = useState("");
   const [olderThanHours, setOlderThanHours] = useState(24);
   const [apiUrl, setApiUrl] = useState(api.baseUrl);
@@ -22,18 +19,6 @@ export function Settings({
 
   function patchSettings(partial: Partial<AppSettings>) {
     setSettings({ ...settings, ...partial });
-  }
-
-  async function checkSmartctl() {
-    setBusy(true);
-    try {
-      setSmartctl(await api.getSmartctl());
-      notify("Verificacao concluida.", "success");
-    } catch (error) {
-      notify(error instanceof Error ? error.message : "Falha ao verificar smartctl.", "error");
-    } finally {
-      setBusy(false);
-    }
   }
 
   async function cleanup() {
@@ -151,21 +136,6 @@ export function Settings({
             <Trash2 size={18} />
             Limpar
           </button>
-        </div>
-
-        <div className="form-panel">
-          <h2>smartmontools</h2>
-          <button className="icon-button label-button" type="button" onClick={checkSmartctl} disabled={busy}>
-            <RefreshCw size={18} />
-            Verificar smartctl
-          </button>
-          {smartctl ? (
-            <div className={`notice ${smartctl.installed ? "notice-success" : "notice-warning"}`}>
-              <CheckCircle2 size={18} />
-              <span>{smartctl.installed ? smartctl.version ?? "Instalado" : smartctl.installHint}</span>
-              <StatusBadge status={smartctl.installed ? "healthy" : "warning"} label={smartctl.installed ? "Instalado" : "Ausente"} />
-            </div>
-          ) : null}
         </div>
       </div>
     </section>

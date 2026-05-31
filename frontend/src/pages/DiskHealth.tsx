@@ -1,15 +1,14 @@
-import { Cloud, RefreshCw, ShieldAlert } from "lucide-react";
+import { Cloud, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api/client";
 import { DiskCard } from "../components/DiskCard";
 import { StatusBadge } from "../components/StatusBadge";
-import type { DiskInfo, SmartctlDetection } from "../types/disk";
+import type { DiskInfo } from "../types/disk";
 import { formatBytes } from "../utils/format";
 
 export function DiskHealth({ notify }: { notify: (message: string, tone?: "success" | "error" | "info") => void }) {
   const [disks, setDisks] = useState<DiskInfo[]>([]);
   const [selectedId, setSelectedId] = useState<string>();
-  const [smartctl, setSmartctl] = useState<SmartctlDetection>();
   const [loading, setLoading] = useState(true);
 
   const selected = disks.find((disk) => disk.id === selectedId) ?? disks[0];
@@ -17,10 +16,9 @@ export function DiskHealth({ notify }: { notify: (message: string, tone?: "succe
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [diskList, smartctlStatus] = await Promise.all([api.getDisks(), api.getSmartctl()]);
+      const diskList = await api.getDisks();
       setDisks(diskList);
       setSelectedId((current) => current ?? diskList[0]?.id);
-      setSmartctl(smartctlStatus);
     } catch (error) {
       notify(error instanceof Error ? error.message : "Falha ao consultar saude.", "error");
     } finally {
@@ -53,15 +51,6 @@ export function DiskHealth({ notify }: { notify: (message: string, tone?: "succe
           </span>
         </div>
       ) : null}
-
-      <div className={`notice ${smartctl?.installed ? "notice-success" : "notice-warning"}`}>
-        <ShieldAlert size={18} />
-        <span>
-          {smartctl?.installed
-            ? `smartctl detectado: ${smartctl.version ?? "versao disponivel"}`
-            : smartctl?.installHint ?? "smartctl nao detectado."}
-        </span>
-      </div>
 
       <div className="split-layout">
         <div className="disk-list">

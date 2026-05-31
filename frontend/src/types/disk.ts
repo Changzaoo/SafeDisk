@@ -50,6 +50,5 @@ export interface DiskInfo {
 export interface SmartctlDetection {
   installed: boolean;
   version?: string;
-  installHint?: string;
   error?: string;
 }

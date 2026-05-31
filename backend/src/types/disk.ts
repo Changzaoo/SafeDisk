@@ -74,7 +74,6 @@ export interface DiskHealthSummary {
 export interface SmartctlDetection {
   installed: boolean;
   version?: string;
-  installHint?: string;
   error?: string;
 }
 

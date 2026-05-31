@@ -1,9 +1,6 @@
 import type { DiskHealthStatus, SmartAttribute, SmartReport, SmartctlDetection } from "../types/disk.js";
 import { runSmartctl } from "../utils/commandRunner.js";
 
-const INSTALL_HINT =
-  "Instale o smartmontools pelo instalador oficial ou via winget: winget install smartmontools.smartmontools";
-
 export async function detectSmartctl(): Promise<SmartctlDetection> {
   try {
     const { stdout } = await runSmartctl(["--version"], 5000);
@@ -15,8 +12,7 @@ export async function detectSmartctl(): Promise<SmartctlDetection> {
   } catch (error) {
     return {
       installed: false,
-      installHint: INSTALL_HINT,
-      error: error instanceof Error ? error.message : "smartctl nao encontrado."
+      error: error instanceof Error ? error.message : "SMART avancado indisponivel."
     };
   }
 }
