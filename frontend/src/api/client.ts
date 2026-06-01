@@ -92,6 +92,19 @@ function shouldTryLocalFallback(error: unknown, path: string): boolean {
   return error instanceof Error && /failed to fetch|networkerror|load failed/i.test(error.message);
 }
 
+function isConnectionFailure(error: unknown): boolean {
+  return (
+    error instanceof TypeError ||
+    (error instanceof Error && /failed to fetch|networkerror|load failed/i.test(error.message))
+  );
+}
+
+function localBackendConnectionError(): Error {
+  return new Error(
+    "Nao consegui conectar ao backend local do SafeDisk. Inicie o backend com npm run dev:backend e mantenha esta janela aberta para carregar discos, historico e recuperacao."
+  );
+}
+
 async function headersWithAuth(init?: RequestInit): Promise<Headers> {
   const headers = new Headers(init?.headers);
   if (!headers.has("Content-Type")) {
@@ -169,7 +182,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       }
     }
 
-    throw error;
+    throw isConnectionFailure(error) ? localBackendConnectionError() : error;
   }
 }
 
@@ -225,7 +238,7 @@ async function download(path: string, fallbackFilename: string): Promise<void> {
       }
     }
 
-    throw error;
+    throw isConnectionFailure(error) ? localBackendConnectionError() : error;
   }
 }
 
